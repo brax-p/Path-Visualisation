@@ -3,6 +3,7 @@
 #include <SFML/System.hpp>
 #include <iostream>
 
+
 class Model {
     public:
         Model();
@@ -11,7 +12,6 @@ class Model {
 };
 
 Model::Model(){
-    
 }
 
 void Model::update(){
@@ -19,5 +19,4 @@ void Model::update(){
 }
 
 void Model::draw(sf::RenderWindow &window){
-  
 }

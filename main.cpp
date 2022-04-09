@@ -1,5 +1,5 @@
 #include "Controller.hpp"
-
+#include "Grid.hpp"
 namespace Algos {
     using namespace std;
     using namespace sf;
@@ -11,7 +11,8 @@ namespace Algos {
         RenderWindow window(VideoMode(1400,960), title);
         Model m;
         Controller c(m);
-        
+        Grid g(10);
+
         while(window.isOpen()){
             Event event;
             while(window.pollEvent(event)){
@@ -27,6 +28,7 @@ namespace Algos {
             c.update(window);
             window.clear();
             m.draw(window);
+            g.draw(window);
             window.display();
         }
     }
