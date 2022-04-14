@@ -169,15 +169,22 @@ bool Grid::isNotVisited(int v, std::vector<int>& path){
 void Grid::bfs(){   
     int listSize = length*length;
     std::queue<int> queue;
+    std::vector<int> previous(listSize);
     queue.push(startPos);
     std::vector<bool> visited(listSize, false);
     visited[startPos] = true;
 
+    int it = 0;
+    int ref = startPos;
     
     while (!queue.empty()) {
         int u = queue.front();
         std::cout << u << " ";
         queue.pop();
+	if(it > 0){
+	    previous[u] = ref;	
+	}
+	ref = u;
         for (int i = 0; i < adjList[u].size(); ++i) {
             int v = adjList[u][i]; // v is a neighbor of u
             if(visited[v] == false){
@@ -187,5 +194,11 @@ void Grid::bfs(){
         }
     }
     std::cout << "\n";
+    std::cout << "Path: \n";
+    int current  = goalPos;
+    while(current != startPos){
+	std::cout << current << " ";
+	current = previous[current];
+    }
 }
 

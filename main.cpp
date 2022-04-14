@@ -1,6 +1,6 @@
 #include "Controller.hpp"
 #include "Grid.hpp"
-namespace Algos {
+namespace Paths {
     using namespace std;
     using namespace sf;
     struct App{
@@ -35,7 +35,7 @@ namespace Algos {
 }
 
 int main(){
-    Algos::App application;
+    Paths::App application;
     application.run("Paths!");
     return 0;
 }
