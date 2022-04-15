@@ -3,6 +3,9 @@
 #include <iostream>
 #include <stack>
 #include <queue>
+#include <limits>
+
+const int INF = std::numeric_limits<int>::max();
 class Grid {
     public:
         Grid(int grid_length);
@@ -12,14 +15,14 @@ class Grid {
         std::vector<std::vector<int>> adjList;
         void dfs();
         void bfs();
-        bool isNotVisited(int v, std::vector<int>& path);
         void printVector(std::vector<int>& vec);
+        void listPath(std::vector<int>& path);
+        int tileLength = 50;
     private:
         int length;
-        int tileLength = 50;
         sf::Vector2f leftCornerPosition;
         int startPos = 0;
-        int goalPos = 99;
+        int goalPos = 15;
 };
 
 void Grid::printVector(std::vector<int>& vec){
@@ -119,7 +122,6 @@ Grid::Grid(int grid_length){
         }
         std::cout << "\n";
     }*/
-    bfs();
 }
 
 void Grid::draw(sf::RenderWindow &window){
@@ -157,24 +159,18 @@ void Grid::dfs(){
     }
 }
 
-bool Grid::isNotVisited(int v, std::vector<int>& path){
-    for(auto p: path){
-        if(v == p){
-            return false;
-        }
-    }
-    return true;
-}
 
 void Grid::bfs(){   
     int listSize = length*length;
     std::queue<int> queue;
     queue.push(startPos);
     std::vector<bool> visited(listSize, false);
+    std::vector<int> previous(listSize);
     visited[startPos] = true;
 
+    bool found = false;
     
-    while (!queue.empty()) {
+    while (!queue.empty() && found == false) {
         int u = queue.front();
         std::cout << u << " ";
         queue.pop();
@@ -182,9 +178,32 @@ void Grid::bfs(){
             int v = adjList[u][i]; // v is a neighbor of u
             if(visited[v] == false){
                 visited[v] = true;
+                previous[v] = u;
                 queue.push(v);
+                if(v == goalPos){
+                    found = true;
+                }
             }
         }
+    }
+    std::cout << "\n";
+    listPath(previous);
+}
+
+void Grid::listPath(std::vector<int>& path){
+    std::stack<int> stack;
+    stack.push(goalPos);
+    int current = path[goalPos];
+    while(current != startPos){
+        stack.push(current);
+        current = path[current];
+    }
+    stack.push(startPos);
+    while(!stack.empty()){
+        int v = stack.top();
+        tiles[v].tile.setFillColor(sf::Color::Green);
+        std::cout << v << " ";
+        stack.pop();
     }
     std::cout << "\n";
 }

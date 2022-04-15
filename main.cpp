@@ -1,5 +1,4 @@
 #include "Controller.hpp"
-#include "Grid.hpp"
 namespace Paths {
     using namespace std;
     using namespace sf;
@@ -9,9 +8,9 @@ namespace Paths {
     };
     void App::run(std::string title){
         RenderWindow window(VideoMode(1400,960), title);
-        Model m;
+        Grid g(4);
+        Model m(g);
         Controller c(m);
-        Grid g(10);
 
         while(window.isOpen()){
             Event event;
@@ -28,7 +27,6 @@ namespace Paths {
             c.update(window);
             window.clear();
             m.draw(window);
-            g.draw(window);
             window.display();
         }
     }
