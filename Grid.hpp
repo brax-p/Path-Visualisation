@@ -14,6 +14,7 @@ class Grid {
         std::vector<Tile> tiles;
         std::vector<std::vector<int>> adjList;
         std::vector<std::vector<int>> defaultGridList;
+        std::vector<std::vector<int>> pathSteps;
         std::vector<int> walls;
         void dfs();
         void bfs();
@@ -27,9 +28,13 @@ class Grid {
         void resetConfigurationState();
         void removeVertex(int tileNumber);
         void addVertex(int tileNumber);
+        void incrementStep(sf::Event& event);
+        void showPath();
+
 
         int tileLength = 50;
         int prevTileLength = 50;
+        int step = 0;
     private:
         int length;
         sf::Vector2f leftCornerPosition;
@@ -180,6 +185,7 @@ void Grid::update(){
     //setDefaultGridState();
     resetConfigurationState();
     bfs();
+    showPath();
     if(tileLength > prevTileLength){
         int diff = tileLength - prevTileLength;
         for(int i = 0; i < length; i++){
@@ -264,16 +270,36 @@ void Grid::bfs(){
 void Grid::listPath(std::vector<int>& path){
     std::stack<int> stack;
     int current = path[goalPos];
+    std::vector<int> currentPath;
     while(current != startPos){
         stack.push(current);
         current = path[current];
     }
     while(!stack.empty()){
         int v = stack.top();
-        tiles[v].tile.setFillColor(sf::Color::Green);
+        currentPath.push_back(v);
+        pathSteps.push_back(currentPath);
+        //tiles[v].tile.setFillColor(sf::Color::Green);
         //std::cout << v << " ";
         stack.pop();
     }
     //std::cout << "\n";
 }
 
+
+void Grid::showPath(){
+    for(int i = 0; i < step; i++){
+        for(int k = 0; k < pathSteps[i].size(); k++){
+            tiles[pathSteps[i][k]].tile.setFillColor(sf::Color::Green); 
+        }
+    }
+}
+
+void Grid::incrementStep(sf::Event& event){
+    if(event.key.code == sf::Keyboard::Right){
+        step++;
+    }
+    else if(event.key.code == sf::Keyboard::Left){
+        step--;
+    }
+}

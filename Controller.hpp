@@ -47,6 +47,9 @@ void Controller::updateEvent(sf::Event &event){
         else if(event.key.code == sf::Keyboard::W){
             this->model.setState("wall");
         }
+        else if(event.key.code == sf::Keyboard::Right){
+            this->model.grid.incrementStep(event);  
+        }
     }
     else if(event.type == sf::Event::MouseWheelScrolled){
         if(event.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel){

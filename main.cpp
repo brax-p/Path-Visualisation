@@ -8,7 +8,7 @@ namespace Paths {
     };
     void App::run(std::string title){
         RenderWindow window(VideoMode(1400,960), title);
-        Grid g(25);
+        Grid g(10);
         Model m(g);
         Controller c(m);
 
