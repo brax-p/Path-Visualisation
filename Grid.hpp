@@ -13,17 +13,46 @@ class Grid {
         void update();
         std::vector<Tile> tiles;
         std::vector<std::vector<int>> adjList;
+        std::vector<std::vector<int>> defaultGridList;
+        std::vector<int> walls;
         void dfs();
         void bfs();
         void printVector(std::vector<int>& vec);
         void listPath(std::vector<int>& path);
+        void setStartPos(int startPos){this->startPos = startPos;}
+        int getStartPos(){return this->startPos;}
+        void setGoalPos(int goalPos) {this->goalPos = goalPos;}
+        int getGoalPos(){return this->goalPos;}
+        void setDefaultGridState();
+        void resetConfigurationState();
+        void removeVertex(int tileNumber);
+        void addVertex(int tileNumber);
+
         int tileLength = 50;
+        int prevTileLength = 50;
     private:
         int length;
         sf::Vector2f leftCornerPosition;
         int startPos = 0;
-        int goalPos = 15;
+        int goalPos;
 };
+
+void Grid::removeVertex(int tileNumber){
+    std::vector<int> neighbors = adjList[tileNumber];
+    walls.push_back(tileNumber);
+    for(int i = 0; i < neighbors.size(); i++){
+        std::vector<int> current = adjList[neighbors[i]];
+        for(int k = 0; k < current.size(); k++){
+            if(current[k] == tileNumber){
+                adjList[neighbors[i]].erase(adjList[neighbors[i]].begin()+k);
+            } 
+        }
+    }
+}
+
+void Grid::addVertex(int tileNumber){
+
+}
 
 void Grid::printVector(std::vector<int>& vec){
     for(auto v: vec){
@@ -34,6 +63,7 @@ void Grid::printVector(std::vector<int>& vec){
 
 Grid::Grid(int grid_length){
     this->length = grid_length;
+    this->goalPos = length*length-1;
     leftCornerPosition.x = 100.0;
     leftCornerPosition.y = 100.0;
 
@@ -49,6 +79,11 @@ Grid::Grid(int grid_length){
             //Create adjacency Matrix that models the grid
         }
     }
+
+    //setting default start and goal tiles' color
+    tiles[0].tile.setFillColor(sf::Color::Yellow);
+    tiles[length*length-1].tile.setFillColor(sf::Color::Red);
+
     for(int i = 0; i < length; i++){
         for(int k = 0; k < length; k++){
             std::vector<int> currentList;
@@ -115,13 +150,7 @@ Grid::Grid(int grid_length){
             adjList.push_back(currentList);
         }
     }
-    /*for(int i = 0; i < adjList.size(); i++){
-        std::cout << i << ": ";
-        for(int k = 0; k < adjList[i].size(); k++){
-            std::cout <<  adjList[i][k] << " ";
-        }
-        std::cout << "\n";
-    }*/
+    defaultGridList = adjList;
 }
 
 void Grid::draw(sf::RenderWindow &window){
@@ -129,8 +158,55 @@ void Grid::draw(sf::RenderWindow &window){
         window.draw(k.tile);
 }
 
-void Grid::update(){
+void Grid::setDefaultGridState(){
+    adjList = defaultGridList;
+    tiles[startPos].tile.setFillColor(sf::Color::Yellow);
+    tiles[goalPos].tile.setFillColor(sf::Color::Red);
+    for(int i = 0; i < tiles.size(); i++){
+        if(i != startPos && i != goalPos && tiles[i].tile.getFillColor() != sf::Color::Blue)
+            tiles[i].tile.setFillColor(sf::Color::White);
+    }
+}
 
+void Grid::resetConfigurationState(){
+    for(int i = 0; i < tiles.size(); i++){
+        if(tiles[i].tile.getFillColor() == sf::Color::Green){
+            tiles[i].tile.setFillColor(sf::Color::White);
+        }
+    }
+}
+
+void Grid::update(){
+    //setDefaultGridState();
+    resetConfigurationState();
+    bfs();
+    if(tileLength > prevTileLength){
+        int diff = tileLength - prevTileLength;
+        for(int i = 0; i < length; i++){
+            for(int k = 0; k < length; k++){
+                sf::Vector2f size(tileLength, tileLength);
+                sf::Vector2f pos = tiles[i*length+k].tile.getPosition();
+                pos.x+=k*diff;
+                pos.y+=i*diff;
+                tiles[i*length+k].tile.setPosition(pos);
+                tiles[i*length+k].tile.setSize(size);
+            } 
+        }
+    }
+    else if(tileLength < prevTileLength){
+        int diff = prevTileLength - tileLength;
+        for(int i = 0; i < length; i++){
+            for(int k = 0; k < length; k++){
+                sf::Vector2f size(tileLength, tileLength);
+                sf::Vector2f pos = tiles[i*length+k].tile.getPosition();
+                pos.x-=k*diff; 
+                pos.y-=i*diff;
+                tiles[i*length+k].tile.setPosition(pos);
+                tiles[i*length+k].tile.setSize(size);
+            }
+        }
+    }
+    prevTileLength = tileLength;
 }
 
 void Grid::dfs(){
@@ -145,11 +221,6 @@ void Grid::dfs(){
         stack.pop();
         if(visited[u] == false){
             visited[u] = true;
-            if(u == goalPos){
-                //  path to goal node exists
-                return;
-
-            }
             for(int i = adjList[u].size() - 1; i >= 0; i--){
                 if(visited[adjList[u][i]] == false){
                     stack.push(adjList[u][i]);
@@ -172,7 +243,7 @@ void Grid::bfs(){
     
     while (!queue.empty() && found == false) {
         int u = queue.front();
-        std::cout << u << " ";
+        //std::cout << u << " ";
         queue.pop();
         for (int i = 0; i < adjList[u].size(); ++i) {
             int v = adjList[u][i]; // v is a neighbor of u
@@ -186,25 +257,23 @@ void Grid::bfs(){
             }
         }
     }
-    std::cout << "\n";
+    //std::cout << "\n";
     listPath(previous);
 }
 
 void Grid::listPath(std::vector<int>& path){
     std::stack<int> stack;
-    stack.push(goalPos);
     int current = path[goalPos];
     while(current != startPos){
         stack.push(current);
         current = path[current];
     }
-    stack.push(startPos);
     while(!stack.empty()){
         int v = stack.top();
         tiles[v].tile.setFillColor(sf::Color::Green);
-        std::cout << v << " ";
+        //std::cout << v << " ";
         stack.pop();
     }
-    std::cout << "\n";
+    //std::cout << "\n";
 }
 
