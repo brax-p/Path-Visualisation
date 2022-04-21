@@ -9,7 +9,7 @@ class Model {
     public:
         Model(Grid& g) : grid(g){
 		    states = {"nill","start", "goal", "wall"};
-	}
+	    }
         void update(sf::RenderWindow& window);
         void draw(sf::RenderWindow &window);
         void handleLeftClick(int x, int y);

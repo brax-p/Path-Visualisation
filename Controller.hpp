@@ -47,7 +47,7 @@ void Controller::updateEvent(sf::Event &event){
         else if(event.key.code == sf::Keyboard::W){
             this->model.setState("wall");
         }
-        else if(event.key.code == sf::Keyboard::Right){
+        else if(event.key.code == sf::Keyboard::Right || event.key.code == sf::Keyboard::Left){
             this->model.grid.incrementStep(event);  
         }
     }

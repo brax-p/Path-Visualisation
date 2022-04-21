@@ -31,7 +31,7 @@ class Grid {
         void incrementStep(sf::Event& event);
         void showPath();
 
-
+        bool activePathing = true;
         int tileLength = 50;
         int prevTileLength = 50;
         int step = 0;
@@ -56,7 +56,61 @@ void Grid::removeVertex(int tileNumber){
 }
 
 void Grid::addVertex(int tileNumber){
+    int rowSize = this->length;
+    int row = tileNumber / rowSize;
+    bool leftEdge = true, rightEdge = true;
+    
+    int topTile = tileNumber - rowSize;
+    int leftTile = tileNumber - 1;
+    int rightTile = tileNumber + 1;
+    int bottomTile = tileNumber + rowSize;
 
+    (tileNumber % rowSize == 0) ? leftEdge = true: leftEdge = false;
+    (tileNumber % rowSize == rowSize-1) ? rightEdge = true: rightEdge = false;
+
+    if(leftEdge){
+        adjList[tileNumber].push_back(rightTile);
+        if(row == 0){
+            adjList[tileNumber].push_back(bottomTile);
+        }
+        else if(row == rowSize - 1){
+            adjList[tileNumber].push_back(topTile);
+        }
+        else{
+            adjList[tileNumber].push_back(bottomTile);
+            adjList[tileNumber].push_back(topTile);
+        }
+    }
+    else if(rightEdge){
+        adjList[tileNumber].push_back(leftTile);
+        if(row == 0){
+            adjList[tileNumber].push_back(bottomTile);
+        }
+        else if(row == rowSize - 1){
+            adjList[tileNumber].push_back(topTile);
+        }
+        else{
+            adjList[tileNumber].push_back(bottomTile);
+            adjList[tileNumber].push_back(topTile);
+        }
+    }
+    else{
+        adjList[tileNumber].push_back(leftTile);
+        adjList[tileNumber].push_back(rightTile);
+        if(row == 0){
+            adjList[tileNumber].push_back(bottomTile);
+        }
+        else if(row == rowSize - 1){
+            adjList[tileNumber].push_back(topTile);
+        }
+        else{
+            adjList[tileNumber].push_back(bottomTile);
+            adjList[tileNumber].push_back(topTile);
+        }
+    }
+    for(auto vertex: adjList[tileNumber]){
+        adjList[vertex].push_back(tileNumber);     
+    }
 }
 
 void Grid::printVector(std::vector<int>& vec){
@@ -68,6 +122,8 @@ void Grid::printVector(std::vector<int>& vec){
 
 Grid::Grid(int grid_length){
     this->length = grid_length;
+    std::vector<std::vector<int>> vec(length*length);
+    pathSteps = vec;
     this->goalPos = length*length-1;
     leftCornerPosition.x = 100.0;
     leftCornerPosition.y = 100.0;
@@ -185,7 +241,11 @@ void Grid::update(){
     //setDefaultGridState();
     resetConfigurationState();
     bfs();
-    showPath();
+    if(!activePathing)
+        showPath();
+
+
+
     if(tileLength > prevTileLength){
         int diff = tileLength - prevTileLength;
         for(int i = 0; i < length; i++){
@@ -236,7 +296,6 @@ void Grid::dfs(){
     }
 }
 
-
 void Grid::bfs(){   
     int listSize = length*length;
     std::queue<int> queue;
@@ -275,11 +334,14 @@ void Grid::listPath(std::vector<int>& path){
         stack.push(current);
         current = path[current];
     }
+    int index = 0;
     while(!stack.empty()){
         int v = stack.top();
         currentPath.push_back(v);
-        pathSteps.push_back(currentPath);
-        //tiles[v].tile.setFillColor(sf::Color::Green);
+        pathSteps[index] = currentPath;
+        index++;
+        if(activePathing)
+            tiles[v].tile.setFillColor(sf::Color::Green);
         //std::cout << v << " ";
         stack.pop();
     }
