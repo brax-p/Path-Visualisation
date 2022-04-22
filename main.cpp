@@ -10,11 +10,11 @@ namespace Paths {
     void App::run(std::string title){
         RenderWindow window(VideoMode(1400,960), title);
         Grid g(10);
-        Model m(g);
+        Model m(g, window);
         Controller c(m);
 
         sf::Vector2f size(300,150);
-        sf::Vector2f pos(0,0);
+        sf::Vector2f pos(800,400);
         Button b(pos, size, sf::Color::Magenta, "Hello World!");
 
         while(window.isOpen()){

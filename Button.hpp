@@ -11,12 +11,10 @@ class Button {
         bool state = 0;
 
         void draw(sf::RenderWindow &window);
+        void update();
 };
 
 Button::Button(sf::Vector2f position, sf::Vector2f size, sf::Color color, std::string text){
-    button.setSize(size);
-    button.setPosition(position);
-    button.setFillColor(color);
     
     if(!font.loadFromFile("./fonts/Akshar.ttf")){
         std::cout << "error, cannot load font" << "\n";
@@ -24,24 +22,32 @@ Button::Button(sf::Vector2f position, sf::Vector2f size, sf::Color color, std::s
     else{
         std::cout << "succesful loading of the font" << "\n";
     }
-    int numChars = text.size();
-    int charSize = size.x / numChars;
-    sf::Vector2f textPos = position;
-    textPos.x+=size.x/32;
-    textPos.y+=size.y/4;
 
-    //TODO:
-    //need to fix text size for general cases with buttons;
+    int buffer = 50;
 
     value.setFont(font);
     value.setString(text);
     value.setFillColor(sf::Color::White);
     value.setStyle(sf::Text::Bold | sf::Text::Underlined);
-    value.setPosition(textPos);
-    value.setScale(2,1.5);
+    value.setPosition(position);
+
+    sf::FloatRect bounds = value.getGlobalBounds();
+
+    sf::Vector2f buttonPos(bounds.left-(buffer/2), bounds.top-(buffer/2));
+    sf::Vector2f buttonSize(bounds.width+buffer, bounds.height+buffer+4);
+
+    button.setSize(buttonSize);
+    button.setPosition(buttonPos);
+    button.setFillColor(sf::Color::Transparent);
+    button.setOutlineColor(sf::Color::Green);
+    button.setOutlineThickness(2);
 }
 
 void Button::draw(sf::RenderWindow &window){
     window.draw(this->button);
     window.draw(this->value);
+}
+
+void Button::update(){
+    
 }

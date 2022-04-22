@@ -7,7 +7,7 @@
 
 class Model {
     public:
-        Model(Grid& g) : grid(g){
+        Model(Grid& g, sf::RenderWindow& window) : grid(g){
 		    states = {"nill","start", "goal", "wall"};
 	    }
         void update(sf::RenderWindow& window);
