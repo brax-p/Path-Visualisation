@@ -2,16 +2,37 @@
 #include <SFML/Window.hpp>
 #include <SFML/System.hpp>
 #include <iostream>
+#include <vector>
 #include "Grid.hpp"
+
+struct GUI {
+    //Struct which contains elements that compose the GUI, excluding the GRID
+    public:
+        GUI();
+        sf::Font font;
+        bool debug = true;
+       
+};
+
+GUI::GUI (){
+
+    if(this->font.loadFromFile("./fonts/Akshar.ttf")){
+        std::cout << "Unsuccessful Font Loading\n";
+    }
+    else if(this->debug){
+        std::cout << "Successful Font Loading\n";
+    }
+
+}
 
 
 class Model {
     public:
-        Model(Grid& g, sf::RenderWindow& window) : grid(g){
+        Model(Grid& g, sf::RenderWindow& w) : grid(g), window(w){
 		    states = {"nill","start", "goal", "wall"};
 	    }
-        void update(sf::RenderWindow& window);
-        void draw(sf::RenderWindow &window);
+        void update(sf::RenderWindow& window, int mouseX, int mouseY, AppState& app_state);
+        void draw();
         void handleLeftClick(int x, int y);
         void handleRightClick(int x, int y);
         int onATile(int x, int y);
@@ -25,9 +46,22 @@ class Model {
         sf::Color green = sf::Color::Green;
         sf::Color yellow = sf::Color::Yellow;
 
+        sf::Time delta_time;
+
         bool leftClickDown = false;
         bool rightClickDown = false;
+
+        //display_state refers to the current mode oof the playback for the algorithms on 
+        //the grid. The current states supported are:
+        //  0 -- Default state, move the spawn and goal nodes/create walls on the grid
+        //  1 -- choose a start/end node then playback the algorithm in real-time, started
+        //       by some start button
+        
+        int display_state = 1;
+
         Grid& grid;
+        GUI& gui();
+        sf::RenderWindow& window;
 };
 
 void Model::setState(std::string state){
@@ -40,16 +74,20 @@ void Model::setState(std::string state){
     }
 }
 
-void Model::update(sf::RenderWindow &window){
+void Model::update(sf::RenderWindow &window, int mouseX, int mouseY, AppState& app_state){
+    this->delta_time = delta_time;
     if(leftClickDown){
         sf::Vector2i pos = sf::Mouse::getPosition(window);
         handleLeftClick(pos.x, pos.y);
     }
-    grid.update(); 
+    //Hover Logic
+
+    //this->gui.update(mouseX, mouseY);
+    grid.update(app_state); 
 }
 
-void Model::draw(sf::RenderWindow &window){
-    this->grid.draw(window);
+void Model::draw(){
+    this->grid.draw(this->window);
 }
 
 int Model::onATile(int x, int y){
@@ -71,7 +109,7 @@ void Model::handleLeftClick(int x, int y){
             return;
         }
         else if(states[0] == "start"){
-            if(grid.tiles[tileNumber].tile.getFillColor() == white){
+            if(grid.tiles[tileNumber].tile.getFillColor() == white || grid.tiles[tileNumber].tile.getFillColor() == green){
                 grid.tiles[grid.getStartPos()].tile.setFillColor(white);
                 grid.tiles[tileNumber].tile.setFillColor(yellow);
                 grid.setStartPos(tileNumber);

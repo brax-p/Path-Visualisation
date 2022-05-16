@@ -1,36 +1,63 @@
 #include "Tile.hpp"
+#include "AppState.hpp"
 #include <vector>
 #include <iostream>
 #include <stack>
 #include <queue>
 #include <limits>
 
+
+// TODO:
+// 
+// Alter Grid class such that each Tile and its derivates contains a list of its neighbors
+// Assign to each Tile or its derivates an index that corresponds to its position in the
+// list of Tile/derivates objects
+
 const int INF = std::numeric_limits<int>::max();
 class Grid {
     public:
         Grid(int grid_length);
-        void draw(sf::RenderWindow &window);
-        void update();
+
         std::vector<Tile> tiles;
         std::vector<std::vector<int>> adjList;
         std::vector<std::vector<int>> defaultGridList;
         std::vector<std::vector<int>> pathSteps;
+        std::vector<std::vector<int>> total_algorithm_steps;
+        std::vector<int> node_summation;
         std::vector<int> walls;
+
+        void draw(sf::RenderWindow& window);
+        void update(AppState& app_state);
+
         void dfs();
         void bfs();
+        void newBfs();
+
         void printVector(std::vector<int>& vec);
-        void listPath(std::vector<int>& path);
+
+        void showSinglePath(std::vector<int>& path);
+        void simulateAlgorithm(std::vector<std::vector<int>>& all_paths);
+
         void setStartPos(int startPos){this->startPos = startPos;}
         int getStartPos(){return this->startPos;}
+
         void setGoalPos(int goalPos) {this->goalPos = goalPos;}
         int getGoalPos(){return this->goalPos;}
+
         void setDefaultGridState();
         void resetConfigurationState();
+
         void removeVertex(int tileNumber);
         void addVertex(int tileNumber);
+
         void incrementStep(sf::Event& event);
         void showPath();
 
+
+        int iteration_factor = 5000;
+        int iteration = 0;
+        sf::Time delta_time;
+        int display_state = 1;
         bool activePathing = true;
         int tileLength = 50;
         int prevTileLength = 50;
@@ -237,15 +264,52 @@ void Grid::resetConfigurationState(){
     }
 }
 
-void Grid::update(){
-    //setDefaultGridState();
-    resetConfigurationState();
-    bfs();
-    if(!activePathing)
-        showPath();
+void Grid::update(AppState& app_state){
+    
+    int current_state_idx = app_state.current_interaction_state;
+    std::string current_state = app_state.interaction_states[current_state_idx];
+    if(current_state == "Playground"){
+        resetConfigurationState();
+        bfs();
+        if(!activePathing)
+            showPath();
+
+    }
+    else if(current_state == "Simulate"){
+
+    }
+    /*
+        //run algorithm
+        // pseudo logic:
+        //
+        //      if currently running simulation,
+        //          every nth factor (when count % n == 0)
+        //          display next sequence of node discovery
+        //          
+        //          assuming the Data Structure is a vector of vectors where
+        //          each vector in the vector of vectors contains
+        //          a list of nodes being discovered that step + all other
+        //          nodes already discovered, there number of iterations needed is
+        //          vector.size() * n where vector.size() is the size of the vector
+        //          of vectors
+        //
+        //          In this context, since this->update() is executed every
+        //          program count, then at each iteration, perform the following:
+        //          vector current = vector sum_discovered_nodes
+        //          vector current += vector nth_step_discovered_nodes
+        //
+        //          this way, the current vector being used contains the previous
+        //          list of all discoverd nodes as well as the nodes discovered
+        //          at the current step. This allows for easy drawing each iteration 
+        //          and understanding about which nodes in the grid are supposed
+        //          to be discovered or not -- albeit not walls or spawn or goal
+        //          or just undiscovered
+
+    }*/
 
 
 
+    //adjusting grid size if resized by the scroll up or scroll down action
     if(tileLength > prevTileLength){
         int diff = tileLength - prevTileLength;
         for(int i = 0; i < length; i++){
@@ -308,10 +372,9 @@ void Grid::bfs(){
     
     while (!queue.empty() && found == false) {
         int u = queue.front();
-        //std::cout << u << " ";
         queue.pop();
         for (int i = 0; i < adjList[u].size(); ++i) {
-            int v = adjList[u][i]; // v is a neighbor of u
+            int v = adjList[u][i];
             if(visited[v] == false){
                 visited[v] = true;
                 previous[v] = u;
@@ -322,11 +385,36 @@ void Grid::bfs(){
             }
         }
     }
-    //std::cout << "\n";
-    listPath(previous);
+    showSinglePath(previous);
 }
 
-void Grid::listPath(std::vector<int>& path){
+void Grid::newBfs() {
+    int size = length * length;
+    std::queue<int> queue;
+    queue.push(startPos);
+    std::vector<bool> visited(size, false);
+    
+    while(!queue.empty()){
+        int u = queue.front();
+        queue.pop();
+        std::vector<int> current_neighbors;
+        for(int i = 0; i < adjList[u].size(); i++){
+            int v = adjList[u][i];
+            if(visited[v] == false){
+                visited[v] = true;
+                queue.push(v);
+                current_neighbors.push_back(v);
+            }   
+        }
+        this->total_algorithm_steps.push_back(current_neighbors);
+    }
+}
+
+void simulateAlgorithm(std::vector<std::vector<int>>& all_paths){
+    
+}
+
+void Grid::showSinglePath(std::vector<int>& path){
     std::stack<int> stack;
     int current = path[goalPos];
     std::vector<int> currentPath;
@@ -342,10 +430,8 @@ void Grid::listPath(std::vector<int>& path){
         index++;
         if(activePathing)
             tiles[v].tile.setFillColor(sf::Color::Green);
-        //std::cout << v << " ";
         stack.pop();
     }
-    //std::cout << "\n";
 }
 
 

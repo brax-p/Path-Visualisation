@@ -1,23 +1,19 @@
 #include "Controller.hpp"
-#include "Button.hpp"
 namespace Paths {
     using namespace std;
     using namespace sf;
     struct App{
         public:
             void run(std::string title);
+            AppState app_state;
     };
     void App::run(std::string title){
         RenderWindow window(VideoMode(1400,960), title);
         Grid g(10);
         Model m(g, window);
         Controller c(m);
-
-        sf::Vector2f size(300,150);
-        sf::Vector2f pos(800,400);
-        Button b(pos, size, sf::Color::Magenta, "Hello World!");
-
         while(window.isOpen()){
+            sf::Clock clock;
             Event event;
             while(window.pollEvent(event)){
                 if(event.type == Event::Closed){
@@ -29,11 +25,13 @@ namespace Paths {
                 }
                 c.updateEvent(event);
             }
-            c.update(window);
+            Time t1 = clock.getElapsedTime();
+            this->app_state.update(t1);
+            c.update(window,this->app_state);
             window.clear();
-            m.draw(window);
-            b.draw(window);
+            m.draw();
             window.display();
+            Time t2 = clock.restart();
         }
     }
 }

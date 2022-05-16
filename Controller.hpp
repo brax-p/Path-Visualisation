@@ -5,17 +5,25 @@
 class Controller{
 
     public:
-        Controller(Model& m) : model(m){}
+        Controller(Model& m) : model(m){
+        }
+        
         void updateEvent(sf::Event &event);
-        void update(sf::RenderWindow &window);
+        void update(sf::RenderWindow &window, AppState& app_state);
+
+        sf::Time delta_time;
     
     private:
         Model& model;
 
 };
 
-void Controller::update(sf::RenderWindow &window){
-    this->model.update(window);
+void Controller::update(sf::RenderWindow &window, AppState& app_state){
+    this->delta_time = delta_time;
+    sf::Vector2i mouse_position = sf::Mouse::getPosition();
+    int x = mouse_position.x;
+    int y = mouse_position.y;
+    this->model.update(window, x, y,app_state);
 }
 
 void Controller::updateEvent(sf::Event &event){
