@@ -1,18 +1,41 @@
 #include <SFML/Graphics.hpp>
 
+enum class Type {Tile, Spawn, Goal, Wall};
+
 class Tile {
     public:
-        Tile();
         Tile(int v, int tL, sf::Vector2f tilePosition);
+        virtual ~Tile() = default;
+
         int vertex; // Corresponds to the index within the adjList, AKA
-                    // vertex = index for simplicity
+                    // vertex = index;
         
+        bool part_of_path = false;
         int tileLength;
         sf::RectangleShape tile;
+        
+        virtual void update() {
+
+            if(this->part_of_path)
+                tile.setFillColor(sf::Color::Green);
+            else if(this->type() == Type::Tile){
+                tile.setFillColor(sf::Color::White);
+            }
+        }
+
+        virtual Type type() const {
+            return Type::Tile;
+        }
+
+        void draw(sf::RenderWindow& window) {
+            window.draw(this->tile);
+        }
+
     protected:
         sf::Vector2f size;
         sf::Vector2f position;
 };
+
 
 Tile::Tile(int v, int tL, sf::Vector2f tilePosition){
     this->vertex = v;
@@ -29,12 +52,15 @@ Tile::Tile(int v, int tL, sf::Vector2f tilePosition){
 }
 
 
-class Spawn : Tile {
+class Spawn : public Tile {
     public:
         Spawn(int v, int tL, sf::Vector2f tile_position);
+        Type type() const override {
+            return Type::Spawn;
+        }
 };
 
-Spawn::Spawn(int v, int tL, sf::Vector2f tile_position) {
+Spawn::Spawn(int v, int tL, sf::Vector2f tile_position) : Tile(v, tL, tile_position){
     /*vertex = v;   
     tileLength = tL;
 
@@ -52,27 +78,28 @@ Spawn::Spawn(int v, int tL, sf::Vector2f tile_position) {
 }
 
 
-class Goal : Tile {
+class Goal : public Tile {
     public:
         Goal(int v, int tL, sf::Vector2f tile_position);
+        Type type() const override {
+            return Type::Goal;
+        }
 };
 
-Goal::Goal(int v, int tL, sf::Vector2f tile_position) {
+Goal::Goal(int v, int tL, sf::Vector2f tile_position) : Tile(v, tL, tile_position) {
     tile.setFillColor(sf::Color::Red);
 }
 
 
-class Wall : Tile {
+class Wall : public Tile {
     public:
         Wall(int v, int tL, sf::Vector2f tile_position);
+        Type type() const override {
+            return Type::Wall;
+        }
 };
 
-Wall::Wall(int v, int tL, sf::Vector2f tile_position){
-        
+Wall::Wall(int v, int tL, sf::Vector2f tile_position) : Tile(v, tL, tile_position){
+        tile.setFillColor(sf::Color::Blue);
 }
 
-
-//TODO:
-// Create derived classes from Tile which implement the 3 types: spawn, goal, and wall --
-// This is to hopefully reduce complexity when adding multiple spawns, goals, walls and in the
-// future, weights from tile to tile.

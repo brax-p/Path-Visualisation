@@ -34,12 +34,16 @@ void Controller::updateEvent(sf::Event &event){
             this->model.handleLeftClick(x,y);
         }
         else if(event.mouseButton.button == sf::Mouse::Right){
+            this->model.rightClickDown = true;
             this->model.handleRightClick(x,y);
         }
     }
     else if(event.type == sf::Event::MouseButtonReleased){
         if(event.mouseButton.button == sf::Mouse::Left){
             this->model.leftClickDown = false; 
+        }
+        else if(event.mouseButton.button == sf::Mouse::Right){
+            this->model.rightClickDown = false;
         }
     }
     else if(event.type == sf::Event::KeyPressed){

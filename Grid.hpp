@@ -5,6 +5,7 @@
 #include <stack>
 #include <queue>
 #include <limits>
+#include <memory>
 
 
 // TODO:
@@ -19,6 +20,8 @@ class Grid {
         Grid(int grid_length);
 
         std::vector<Tile> tiles;
+        std::vector<std::unique_ptr<Tile>> tiles_;
+            
         std::vector<std::vector<int>> adjList;
         std::vector<std::vector<int>> defaultGridList;
         std::vector<std::vector<int>> pathSteps;
@@ -148,10 +151,10 @@ void Grid::printVector(std::vector<int>& vec){
 }
 
 Grid::Grid(int grid_length){
-    this->length = grid_length;
+    length = grid_length;
     std::vector<std::vector<int>> vec(length*length);
     pathSteps = vec;
-    this->goalPos = length*length-1;
+    goalPos = length*length-1;
     leftCornerPosition.x = 100.0;
     leftCornerPosition.y = 100.0;
 
@@ -161,16 +164,23 @@ Grid::Grid(int grid_length){
             sf::Vector2f tilePosition;
             tilePosition.x = k*tileLength + leftCornerPosition.x;
             tilePosition.y = i*tileLength + leftCornerPosition.y;
-            Tile t((i*length+k), tileLength, tilePosition); // kth element of the ith row in form (i*length + k)
-            tiles.push_back(t);
+
+            int current_vertex = i*length+k;
+
+            if(current_vertex == startPos){
+                Spawn spawn((startPos), tileLength, tilePosition);
+                tiles_.emplace_back(new Spawn((startPos), tileLength, tilePosition));
+            }
+            else if(current_vertex == goalPos){
+                tiles_.emplace_back(new Goal((goalPos), tileLength, tilePosition));
+            }
+            else{
+                tiles_.emplace_back(new Tile((i*length+k), tileLength, tilePosition));
+            }   
 
             //Create adjacency Matrix that models the grid
         }
     }
-
-    //setting default start and goal tiles' color
-    tiles[0].tile.setFillColor(sf::Color::Yellow);
-    tiles[length*length-1].tile.setFillColor(sf::Color::Red);
 
     for(int i = 0; i < length; i++){
         for(int k = 0; k < length; k++){
@@ -242,8 +252,14 @@ Grid::Grid(int grid_length){
 }
 
 void Grid::draw(sf::RenderWindow &window){
+    /*
     for(auto k: tiles)
         window.draw(k.tile);
+    */
+    
+    for(auto& tile: tiles_)
+        tile->draw(window);
+        
 }
 
 void Grid::setDefaultGridState(){
@@ -257,27 +273,47 @@ void Grid::setDefaultGridState(){
 }
 
 void Grid::resetConfigurationState(){
+    /*
     for(int i = 0; i < tiles.size(); i++){
         if(tiles[i].tile.getFillColor() == sf::Color::Green){
             tiles[i].tile.setFillColor(sf::Color::White);
         }
     }
+    */
+
+    for(auto& tile: tiles_){
+        if(tile->part_of_path)
+            tile->part_of_path = false;
+    }
 }
 
 void Grid::update(AppState& app_state){
+    int idx = 0;
+    for(auto& tile: tiles_){
+        //99 -> row = 99 / 10 = 9, col = 99 % 10 = 9
+        int row = tile->vertex / length;
+        int col = tile->vertex % length;
+        sf::Vector2f new_position;
+        new_position.x = leftCornerPosition.x + col*tileLength;
+        new_position.y = leftCornerPosition.y + row*tileLength;
+        tile->tile.setPosition(new_position);
+        tile->update();
+        idx++;
+    }
+
     
+
     int current_state_idx = app_state.current_interaction_state;
     std::string current_state = app_state.interaction_states[current_state_idx];
+    
     if(current_state == "Playground"){
         resetConfigurationState();
         bfs();
-        if(!activePathing)
-            showPath();
-
     }
     else if(current_state == "Simulate"){
 
     }
+
     /*
         //run algorithm
         // pseudo logic:
@@ -428,19 +464,19 @@ void Grid::showSinglePath(std::vector<int>& path){
         currentPath.push_back(v);
         pathSteps[index] = currentPath;
         index++;
-        if(activePathing)
-            tiles[v].tile.setFillColor(sf::Color::Green);
+        tiles_[v]->part_of_path = true;
         stack.pop();
     }
 }
 
 
 void Grid::showPath(){
+    /*
     for(int i = 0; i < step; i++){
         for(int k = 0; k < pathSteps[i].size(); k++){
             tiles[pathSteps[i][k]].tile.setFillColor(sf::Color::Green); 
         }
-    }
+    }*/
 }
 
 void Grid::incrementStep(sf::Event& event){

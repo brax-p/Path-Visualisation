@@ -8,7 +8,7 @@ namespace Paths {
             AppState app_state;
     };
     void App::run(std::string title){
-        RenderWindow window(VideoMode(1400,960), title);
+        RenderWindow window(VideoMode(960,960), title);
         Grid g(10);
         Model m(g, window);
         Controller c(m);
