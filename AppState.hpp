@@ -2,6 +2,7 @@
 class AppState {
     public:
         int64_t delta_time_in_microseconds = 0;
+        float delta_time = 0.0;
 
         //interaction states refers to the way the user
         //can interact with the app --
@@ -21,6 +22,7 @@ class AppState {
 
 void AppState::update(sf::Time delta_time){
     this->delta_time_in_microseconds = delta_time.asMicroseconds();
+    this->delta_time = delta_time.asSeconds();
 }
 
 

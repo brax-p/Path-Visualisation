@@ -8,12 +8,6 @@
 #include <memory>
 
 
-// TODO:
-// 
-// Alter Grid class such that each Tile and its derivates contains a list of its neighbors
-// Assign to each Tile or its derivates an index that corresponds to its position in the
-// list of Tile/derivates objects
-
 const int INF = std::numeric_limits<int>::max();
 class Grid {
     public:
@@ -26,7 +20,6 @@ class Grid {
         std::vector<std::vector<int>> defaultGridList;
         std::vector<std::vector<int>> pathSteps;
         std::vector<std::vector<int>> total_algorithm_steps;
-        std::vector<int> node_summation;
         std::vector<int> walls;
 
         void draw(sf::RenderWindow& window);
@@ -47,6 +40,8 @@ class Grid {
         void setGoalPos(int goalPos) {this->goalPos = goalPos;}
         int getGoalPos(){return this->goalPos;}
 
+        sf::Vector2f getGridOrigin() { return this-> leftCornerPosition;}
+
         void setDefaultGridState();
         void resetConfigurationState();
 
@@ -54,7 +49,6 @@ class Grid {
         void addVertex(int tileNumber);
 
         void incrementStep(sf::Event& event);
-        void showPath();
 
 
         int iteration_factor = 5000;
@@ -65,8 +59,8 @@ class Grid {
         int tileLength = 50;
         int prevTileLength = 50;
         int step = 0;
-    private:
         int length;
+    private:
         sf::Vector2f leftCornerPosition;
         int startPos = 0;
         int goalPos;
@@ -74,9 +68,8 @@ class Grid {
 
 void Grid::removeVertex(int tileNumber){
     std::vector<int> neighbors = adjList[tileNumber];
-    walls.push_back(tileNumber);
     for(int i = 0; i < neighbors.size(); i++){
-        std::vector<int> current = adjList[neighbors[i]];
+        std::vector<int>& current = adjList[neighbors[i]];
         for(int k = 0; k < current.size(); k++){
             if(current[k] == tileNumber){
                 adjList[neighbors[i]].erase(adjList[neighbors[i]].begin()+k);
@@ -467,16 +460,6 @@ void Grid::showSinglePath(std::vector<int>& path){
         tiles_[v]->part_of_path = true;
         stack.pop();
     }
-}
-
-
-void Grid::showPath(){
-    /*
-    for(int i = 0; i < step; i++){
-        for(int k = 0; k < pathSteps[i].size(); k++){
-            tiles[pathSteps[i][k]].tile.setFillColor(sf::Color::Green); 
-        }
-    }*/
 }
 
 void Grid::incrementStep(sf::Event& event){

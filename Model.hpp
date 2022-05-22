@@ -1,48 +1,24 @@
-#include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/System.hpp>
 #include <iostream>
 #include <vector>
 #include "Grid.hpp"
-
-
-
-// TODO: 
-// MAY 17
-// Work on the controller functionality, specifically 
-// Handle Left Click/Handle Right Click
-
-struct GUI {
-    //Struct which contains elements that compose the GUI, excluding the GRID
-    public:
-        GUI();
-        sf::Font font;
-        bool debug = true;
-       
-};
-
-GUI::GUI (){
-
-    if(this->font.loadFromFile("./fonts/Akshar.ttf")){
-        std::cout << "Unsuccessful Font Loading\n";
-    }
-    else if(this->debug){
-        std::cout << "Successful Font Loading\n";
-    }
-
-}
-
+#include "GUI.hpp"
 
 class Model {
     public:
-        Model(Grid& g, sf::RenderWindow& w) : grid(g), window(w){
+        Model(Grid& g, sf::RenderWindow& w, GUI& gui_param) : grid(g), window(w), gui(gui_param){
 		    states = {"nill","start", "goal", "wall"};
 	    }
         void update(sf::RenderWindow& window, int mouseX, int mouseY, AppState& app_state);
         void draw();
         void handleLeftClick(int x, int y);
+        void handleLeftReleased();
         void handleRightClick(int x, int y);
+        void printGridTiles();
         int onATile(int x, int y);
+        int onAButton(int x, int y);
+
 
         void setState(std::string state);
 	    std::vector<std::string> states;
@@ -57,6 +33,8 @@ class Model {
 
         bool leftClickDown = false;
         bool rightClickDown = false;
+        bool printGrid = true;
+        bool debug = false;
 
         //display_state refers to the current mode oof the playback for the algorithms on 
         //the grid. The current states supported are:
@@ -67,7 +45,7 @@ class Model {
         int display_state = 1;
 
         Grid& grid;
-        GUI& gui();
+        GUI& gui;
         sf::RenderWindow& window;
 };
 
@@ -86,19 +64,33 @@ void Model::update(sf::RenderWindow &window, int mouseX, int mouseY, AppState& a
     if(leftClickDown){
         sf::Vector2i pos = sf::Mouse::getPosition(window);
         handleLeftClick(pos.x, pos.y);
+        if(printGrid && debug)
+            printGridTiles();
     }
     else if(rightClickDown) {
         sf::Vector2i pos = sf::Mouse::getPosition(window);
         handleRightClick(pos.x, pos.y);
+        if(printGrid && debug)
+            printGridTiles();
+    }
+    
+    if(leftClickDown == false){
+        printGrid = true;
+    }
+    else if(rightClickDown == false){
+        printGrid = true;
     }
     //Hover Logic
 
     //this->gui.update(mouseX, mouseY);
     grid.update(app_state); 
+    gui.update();
+    std::cout << (1/app_state.delta_time) << "Frames per second\n";
 }
 
 void Model::draw(){
     this->grid.draw(this->window);
+    gui.draw(window);
 }
 
 int Model::onATile(int x, int y){
@@ -123,8 +115,59 @@ int Model::onATile(int x, int y){
    return -1;
 }
 
+int Model::onAButton(int x, int y) {
+
+    //needs to work with enum of elements in gui
+    
+    int idx = 0;
+    for(auto& button : gui.buttons_){
+        sf::Vector2f pos = button->button.getPosition();
+        sf::Vector2f size = button->button.getSize();
+        if(x > pos.x && x < pos.x + size.x){
+            if(y > pos.y && y < pos.y + size.y){
+                return idx;
+            }
+        }
+        idx++;
+    }
+    return -1;
+}
+
+void Model::printGridTiles() {
+    printGrid = false;
+    int idx = 0;
+    int width = grid.length;
+    for(auto& tile: grid.tiles_){
+        std::string tile_type = "";
+        Type type = tile->type();
+        if(type == Type::Tile){
+            if(tile->part_of_path)
+                tile_type = "-";
+            else
+                tile_type = "0";
+        }
+        else if(type == Type::Wall)
+            tile_type = "1";
+        else if(type == Type::Spawn)
+            tile_type = "S";
+        else if(type == Type::Goal)
+            tile_type = "G";
+
+        std::cout << tile_type << " ";
+        if(idx % width == width - 1)
+            std::cout << "\n";
+        idx++;
+    }
+}
+
+
 void Model::handleLeftClick(int x, int y){
+
     int tileNumber = onATile(x,y);
+    int button_idx = onAButton(x,y);
+
+
+
     if(tileNumber > -1){ //if the current left click is ontop of a tile
         Type type = grid.tiles_[tileNumber]->type();
         if(states[0] == "nill"){
@@ -165,7 +208,23 @@ void Model::handleLeftClick(int x, int y){
             grid.removeVertex(tileNumber);
         }
     }
+    else if(button_idx > -1){
+        auto& button = gui.simulation_options[button_idx];
+        if(button.clicked == false){
+            button.clicked = true;
+        }
+    }
+
 }
+
+void Model::handleLeftReleased() {
+    for(auto& button : gui.buttons_){
+        button->clicked = false;
+    }
+}
+
+
+
 
 void Model::handleRightClick(int x, int y){
     int tileNumber = onATile(x,y);
@@ -173,19 +232,15 @@ void Model::handleRightClick(int x, int y){
         Type type = grid.tiles_[tileNumber]->type();
         if(type == Type::Wall){
             int v = tileNumber;
-            int tL = grid.tiles_[v]->tileLength;
+            int tile_length = grid.tiles_[v]->tileLength;
             sf::Vector2f tile_position = grid.tiles_[v]->tile.getPosition();
-            grid.tiles_.emplace_back(new Tile(v,tL, tile_position));
-            int idx = grid.tiles_.size()-1;
-            std::swap(grid.tiles_[v], grid.tiles_[idx]);
-            grid.tiles_.erase(grid.tiles_.begin()+idx+1);
-            std::cout << grid.tiles_.size() << "\n";
+            grid.tiles_.emplace_back(new Tile(v,tile_length, tile_position));
+            int size = grid.tiles_.size();
+            std::swap(grid.tiles_[v], grid.tiles_[size-1]);
+            grid.tiles_.pop_back();
+            //grid.tiles_.erase(grid.tiles_.begin()+size);
+            grid.addVertex(tileNumber);
         }
-        grid.addVertex(tileNumber);
     }
 }
-
-
-
-
 

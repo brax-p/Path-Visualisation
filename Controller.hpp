@@ -11,19 +11,20 @@ class Controller{
         void updateEvent(sf::Event &event);
         void update(sf::RenderWindow &window, AppState& app_state);
 
-        sf::Time delta_time;
-    
+        int delta_time;
     private:
         Model& model;
 
 };
 
 void Controller::update(sf::RenderWindow &window, AppState& app_state){
-    this->delta_time = delta_time;
+
+    this->delta_time = app_state.delta_time_in_microseconds;
     sf::Vector2i mouse_position = sf::Mouse::getPosition();
     int x = mouse_position.x;
     int y = mouse_position.y;
     this->model.update(window, x, y,app_state);
+
 }
 
 void Controller::updateEvent(sf::Event &event){
@@ -41,6 +42,7 @@ void Controller::updateEvent(sf::Event &event){
     else if(event.type == sf::Event::MouseButtonReleased){
         if(event.mouseButton.button == sf::Mouse::Left){
             this->model.leftClickDown = false; 
+            this->model.handleLeftReleased();
         }
         else if(event.mouseButton.button == sf::Mouse::Right){
             this->model.rightClickDown = false;
