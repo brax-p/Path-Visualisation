@@ -7,7 +7,7 @@
 
 class Model {
     public:
-        Model(Grid& g, sf::RenderWindow& w, GUI& gui_param) : grid(g), window(w), gui(gui_param){
+        Model(Grid& g, sf::RenderWindow& w, GUI& gui_param) : grid(g), window(w), gui(gui_param) {
 		    states = {"nill","start", "goal", "wall"};
 	    }
         void update(sf::RenderWindow& window, int mouseX, int mouseY, AppState& app_state);
@@ -18,7 +18,6 @@ class Model {
         void printGridTiles();
         int onATile(int x, int y);
         int onAButton(int x, int y);
-
 
         void setState(std::string state);
 	    std::vector<std::string> states;
@@ -36,7 +35,7 @@ class Model {
         bool printGrid = true;
         bool debug = false;
 
-        //display_state refers to the current mode oof the playback for the algorithms on 
+        //display_state refers to the current mode of the playback for the algorithms on 
         //the grid. The current states supported are:
         //  0 -- Default state, move the spawn and goal nodes/create walls on the grid
         //  1 -- choose a start/end node then playback the algorithm in real-time, started
@@ -44,8 +43,8 @@ class Model {
         
         int display_state = 1;
 
-        Grid& grid;
         GUI& gui;
+        Grid& grid;
         sf::RenderWindow& window;
 };
 
@@ -80,31 +79,20 @@ void Model::update(sf::RenderWindow &window, int mouseX, int mouseY, AppState& a
     else if(rightClickDown == false){
         printGrid = true;
     }
-    //Hover Logic
-
     //this->gui.update(mouseX, mouseY);
     grid.update(app_state); 
-    gui.update();
-    std::cout << (1/app_state.delta_time) << "Frames per second\n";
+    //std::cout << (1/app_state.delta_time) << "Frames per second\n";
+    for(auto& button: gui.buttons){
+        button->update(mouseX, mouseY);
+    }
 }
 
 void Model::draw(){
     this->grid.draw(this->window);
-    gui.draw(window);
+    this->gui.draw(this->window);
 }
 
 int Model::onATile(int x, int y){
-    /*
-   for(int i = 0; i < grid.tiles.size(); i++){
-       sf::RectangleShape t = grid.tiles[i].tile;
-       if(x > t.getPosition().x && x < t.getPosition().x+grid.tileLength){
-            if(y > t.getPosition().y && y < t.getPosition().y + grid.tileLength){
-                return i;
-            }
-       }
-   }
-   */
-    
     for(auto& tile: grid.tiles_){
         if(x > tile->tile.getPosition().x && x < tile->tile.getPosition().x + tile->tile.getSize().x){
             if(y > tile->tile.getPosition().y && y < tile->tile.getPosition().y + tile->tile.getSize().y){
@@ -116,15 +104,12 @@ int Model::onATile(int x, int y){
 }
 
 int Model::onAButton(int x, int y) {
-
-    //needs to work with enum of elements in gui
-    
     int idx = 0;
-    for(auto& button : gui.buttons_){
-        sf::Vector2f pos = button->button.getPosition();
-        sf::Vector2f size = button->button.getSize();
-        if(x > pos.x && x < pos.x + size.x){
-            if(y > pos.y && y < pos.y + size.y){
+    for(auto& button: gui.buttons) {
+        sf::Vector2f size = button->element.getSize();
+        sf::Vector2f position = button->element.getPosition();
+        if(x > position.x && x < position.x + size.x){
+            if(y > position.y && y < position.y + size.y){
                 return idx;
             }
         }
@@ -132,6 +117,7 @@ int Model::onAButton(int x, int y) {
     }
     return -1;
 }
+
 
 void Model::printGridTiles() {
     printGrid = false;
@@ -164,7 +150,6 @@ void Model::printGridTiles() {
 void Model::handleLeftClick(int x, int y){
 
     int tileNumber = onATile(x,y);
-    int button_idx = onAButton(x,y);
 
 
 
@@ -208,24 +193,11 @@ void Model::handleLeftClick(int x, int y){
             grid.removeVertex(tileNumber);
         }
     }
-    else if(button_idx > -1){
-        auto& button = gui.simulation_options[button_idx];
-        if(button.clicked == false){
-            button.clicked = true;
-        }
-    }
-
 }
 
 void Model::handleLeftReleased() {
-    for(auto& button : gui.buttons_){
-        button->clicked = false;
-    }
+
 }
-
-
-
-
 void Model::handleRightClick(int x, int y){
     int tileNumber = onATile(x,y);
     if(tileNumber != -1){
@@ -238,7 +210,6 @@ void Model::handleRightClick(int x, int y){
             int size = grid.tiles_.size();
             std::swap(grid.tiles_[v], grid.tiles_[size-1]);
             grid.tiles_.pop_back();
-            //grid.tiles_.erase(grid.tiles_.begin()+size);
             grid.addVertex(tileNumber);
         }
     }

@@ -20,7 +20,7 @@ class Controller{
 void Controller::update(sf::RenderWindow &window, AppState& app_state){
 
     this->delta_time = app_state.delta_time_in_microseconds;
-    sf::Vector2i mouse_position = sf::Mouse::getPosition();
+    sf::Vector2i mouse_position = sf::Mouse::getPosition(window);
     int x = mouse_position.x;
     int y = mouse_position.y;
     this->model.update(window, x, y,app_state);

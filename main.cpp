@@ -1,4 +1,5 @@
 #include "Controller.hpp"
+
 namespace Paths {
     using namespace std;
     using namespace sf;
@@ -9,8 +10,8 @@ namespace Paths {
     };
     void App::run(std::string title){
         RenderWindow window(VideoMode(900,960), title);
+        GUI gui;
         Grid g(15);
-        GUI gui(g.getGridOrigin());
         Model m(g, window, gui);
         Controller c(m);
         while(window.isOpen()){
