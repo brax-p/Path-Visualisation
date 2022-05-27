@@ -12,7 +12,7 @@ namespace Paths {
         RenderWindow window(VideoMode(900,960), title);
         GUI gui;
         Grid g(15);
-        Model m(g, window, gui);
+        Model m(g, window, gui, app_state);
         Controller c(m);
         while(window.isOpen()){
             sf::Clock clock;

@@ -12,14 +12,14 @@ class Tile {
         
         bool part_of_path = false;
         int tileLength;
-        sf::RectangleShape tile;
+        sf::RectangleShape element;
         
         virtual void update() {
 
             if(this->part_of_path)
-                tile.setFillColor(sf::Color::Green);
+                element.setFillColor(sf::Color::Green);
             else if(this->type() == Type::Tile){
-                tile.setFillColor(sf::Color::White);
+                element.setFillColor(sf::Color::White);
             }
         }
 
@@ -28,7 +28,7 @@ class Tile {
         }
 
         void draw(sf::RenderWindow& window) {
-            window.draw(this->tile);
+            window.draw(this->element);
         }
 
     protected:
@@ -44,11 +44,11 @@ Tile::Tile(int v, int tL, sf::Vector2f tilePosition){
     position = tilePosition;
 
     //Create Tile
-    tile.setSize(size);
-    tile.setPosition(position);
-    tile.setFillColor(sf::Color::White);
-    tile.setOutlineColor(sf::Color::Blue);
-    tile.setOutlineThickness(2);
+    element.setSize(size);
+    element.setPosition(position);
+    element.setFillColor(sf::Color::White);
+    element.setOutlineColor(sf::Color::Blue);
+    element.setOutlineThickness(2);
 }
 
 
@@ -61,20 +61,7 @@ class Spawn : public Tile {
 };
 
 Spawn::Spawn(int v, int tL, sf::Vector2f tile_position) : Tile(v, tL, tile_position){
-    /*vertex = v;   
-    tileLength = tL;
-
-    size.x = tileLength;
-    size.y = tileLength;
-    
-    position = tile_position;
-
-    tile.setSize(size);
-    tile.setPosition(position);*/
-    tile.setFillColor(sf::Color::Yellow);
-    /*tile.setOutlineColor(sf::Color::Blue);
-    tile.setOutlineThickness(2);*/
-    
+    element.setFillColor(sf::Color::Yellow);
 }
 
 
@@ -87,7 +74,7 @@ class Goal : public Tile {
 };
 
 Goal::Goal(int v, int tL, sf::Vector2f tile_position) : Tile(v, tL, tile_position) {
-    tile.setFillColor(sf::Color::Red);
+    element.setFillColor(sf::Color::Red);
 }
 
 
@@ -100,6 +87,6 @@ class Wall : public Tile {
 };
 
 Wall::Wall(int v, int tL, sf::Vector2f tile_position) : Tile(v, tL, tile_position){
-        tile.setFillColor(sf::Color::Blue);
+        element.setFillColor(sf::Color::Blue);
 }
 

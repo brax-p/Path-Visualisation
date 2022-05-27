@@ -5,10 +5,27 @@
 #include "Grid.hpp"
 #include "GUI.hpp"
 
+template <class T>
+int onAnElement(int x, int y, std::vector<std::unique_ptr<T>>& list){
+    int idx = 0;
+    for(auto& component : list){
+        sf::Vector2f size = component->element.getSize();
+        sf::Vector2f position = component->element.getPosition();
+        if(x > position.x && x < position.x + size.x){
+            if(y > position.y && y < position.y + size.y){
+                return idx;
+            }
+        }
+        idx++;
+    }
+    return -1;
+}
+
 class Model {
     public:
-        Model(Grid& g, sf::RenderWindow& w, GUI& gui_param) : grid(g), window(w), gui(gui_param) {
+        Model(Grid& g, sf::RenderWindow& w, GUI& gui_param, AppState& app_state_param) : grid(g), window(w), gui(gui_param), app_state(app_state_param) {
 		    states = {"nill","start", "goal", "wall"};
+            current_clicked_button = 0;
 	    }
         void update(sf::RenderWindow& window, int mouseX, int mouseY, AppState& app_state);
         void draw();
@@ -16,7 +33,6 @@ class Model {
         void handleLeftReleased();
         void handleRightClick(int x, int y);
         void printGridTiles();
-        int onATile(int x, int y);
         int onAButton(int x, int y);
 
         void setState(std::string state);
@@ -30,6 +46,8 @@ class Model {
 
         sf::Time delta_time;
 
+        std::string current_state = "";
+
         bool leftClickDown = false;
         bool rightClickDown = false;
         bool printGrid = true;
@@ -42,7 +60,8 @@ class Model {
         //       by some start button
         
         int display_state = 1;
-
+        int current_clicked_button;
+        AppState& app_state;
         GUI& gui;
         Grid& grid;
         sf::RenderWindow& window;
@@ -59,7 +78,7 @@ void Model::setState(std::string state){
 }
 
 void Model::update(sf::RenderWindow &window, int mouseX, int mouseY, AppState& app_state){
-    this->delta_time = delta_time;
+    this->current_state = app_state.current_interaction_state;
     if(leftClickDown){
         sf::Vector2i pos = sf::Mouse::getPosition(window);
         handleLeftClick(pos.x, pos.y);
@@ -92,17 +111,6 @@ void Model::draw(){
     this->gui.draw(this->window);
 }
 
-int Model::onATile(int x, int y){
-    for(auto& tile: grid.tiles_){
-        if(x > tile->tile.getPosition().x && x < tile->tile.getPosition().x + tile->tile.getSize().x){
-            if(y > tile->tile.getPosition().y && y < tile->tile.getPosition().y + tile->tile.getSize().y){
-                return tile->vertex;
-            }
-        }
-    }
-   return -1;
-}
-
 int Model::onAButton(int x, int y) {
     int idx = 0;
     for(auto& button: gui.buttons) {
@@ -118,16 +126,15 @@ int Model::onAButton(int x, int y) {
     return -1;
 }
 
-
 void Model::printGridTiles() {
     printGrid = false;
     int idx = 0;
     int width = grid.length;
-    for(auto& tile: grid.tiles_){
+    for(auto& element: grid.tiles_){
         std::string tile_type = "";
-        Type type = tile->type();
+        Type type = element->type();
         if(type == Type::Tile){
-            if(tile->part_of_path)
+            if(element->part_of_path)
                 tile_type = "-";
             else
                 tile_type = "0";
@@ -147,65 +154,83 @@ void Model::printGridTiles() {
 }
 
 
+
+
 void Model::handleLeftClick(int x, int y){
-
-    int tileNumber = onATile(x,y);
-
-
-
-    if(tileNumber > -1){ //if the current left click is ontop of a tile
-        Type type = grid.tiles_[tileNumber]->type();
-        if(states[0] == "nill"){
-            return;
-        }
-        else if(states[0] == "start"){
-            if(type == Type::Tile){
-                //swap logic
-                int startPos = grid.getStartPos();
-                int temp_tileNumber = tileNumber;
-                grid.tiles_[tileNumber]->vertex = startPos;
-                grid.tiles_[startPos]->vertex = temp_tileNumber;
-                std::swap(grid.tiles_[tileNumber], grid.tiles_[grid.getStartPos()]);
-                grid.setStartPos(temp_tileNumber);
+    int test_button = onAnElement(x,y, grid.tiles_);
+    std::cout << "button pressed is: " << test_button << "\n";
+    int tileNumber = onAnElement(x,y, grid.tiles_);
+    int buttonNumber = onAButton(x,y);
+    bool onAnElement = (tileNumber != -1 || buttonNumber != -1) ? true : false;
+    if(onAnElement == true){
+        if(tileNumber > -1){ //if the current left click is ontop of a tile
+            Type type = grid.tiles_[tileNumber]->type();
+            if(states[0] == "nill"){
+                return;
+            }
+            else if(states[0] == "start"){
+                if(type == Type::Tile){
+                    //swap logic
+                    int startPos = grid.getStartPos();
+                    int temp_tileNumber = tileNumber;
+                    grid.tiles_[tileNumber]->vertex = startPos;
+                    grid.tiles_[startPos]->vertex = temp_tileNumber;
+                    std::swap(grid.tiles_[tileNumber], grid.tiles_[grid.getStartPos()]);
+                    grid.setStartPos(temp_tileNumber);
+                }
+            }
+            else if(states[0] == "goal"){
+                if(type == Type::Tile){
+                    int goalPos = grid.getGoalPos();
+                    int temp_tileNumber = tileNumber;
+                    grid.tiles_[tileNumber]->vertex = goalPos;
+                    grid.tiles_[goalPos]->vertex = temp_tileNumber;
+                    std::swap(grid.tiles_[tileNumber], grid.tiles_[grid.getGoalPos()]);
+                    grid.setGoalPos(temp_tileNumber);
+                }
+            }
+            else if(states[0] == "wall"){
+                if(type == Type::Tile){
+                    int v = tileNumber;
+                    int tL = grid.tiles_[v]->tileLength;
+                    sf::Vector2f tile_position = grid.tiles_[v]->element.getPosition();
+                    grid.tiles_.emplace_back(new Wall(v,tL, tile_position));
+                    int idx = grid.tiles_.size()-1;
+                    std::swap(grid.tiles_[v], grid.tiles_[idx]);
+                    grid.tiles_.erase(grid.tiles_.begin()+idx+1);
+                }
+                //Handle adjacency list changes needed;
+                grid.removeVertex(tileNumber);
             }
         }
-        else if(states[0] == "goal"){
-            if(type == Type::Tile){
-                int goalPos = grid.getGoalPos();
-                int temp_tileNumber = tileNumber;
-                grid.tiles_[tileNumber]->vertex = goalPos;
-                grid.tiles_[goalPos]->vertex = temp_tileNumber;
-                std::swap(grid.tiles_[tileNumber], grid.tiles_[grid.getGoalPos()]);
-                grid.setGoalPos(temp_tileNumber);
+        else if(buttonNumber > -1){
+            //std::cout << "button number is: " << buttonNumber << "\n";
+            gui.buttons[buttonNumber]->clicked = true;   
+            current_clicked_button = buttonNumber;
+            if(gui.buttons[buttonNumber]->button_text == "Start Simulation") {
+                int sim_idx = 0;
+                for(auto& state : app_state.interaction_states){
+                    if(state=="Simulation"){
+                        
+                    }
+                    sim_idx++;
+                }
             }
-        }
-        else if(states[0] == "wall"){
-            if(type == Type::Tile){
-                int v = tileNumber;
-                int tL = grid.tiles_[v]->tileLength;
-                sf::Vector2f tile_position = grid.tiles_[v]->tile.getPosition();
-                grid.tiles_.emplace_back(new Wall(v,tL, tile_position));
-                int idx = grid.tiles_.size()-1;
-                std::swap(grid.tiles_[v], grid.tiles_[idx]);
-                grid.tiles_.erase(grid.tiles_.begin()+idx+1);
-            }
-            //Handle adjacency list changes needed;
-            grid.removeVertex(tileNumber);
         }
     }
 }
 
 void Model::handleLeftReleased() {
-
+        gui.buttons[current_clicked_button]->clicked = false;
 }
 void Model::handleRightClick(int x, int y){
-    int tileNumber = onATile(x,y);
+    int tileNumber = onAnElement(x,y, grid.tiles_);
     if(tileNumber != -1){
         Type type = grid.tiles_[tileNumber]->type();
         if(type == Type::Wall){
             int v = tileNumber;
             int tile_length = grid.tiles_[v]->tileLength;
-            sf::Vector2f tile_position = grid.tiles_[v]->tile.getPosition();
+            sf::Vector2f tile_position = grid.tiles_[v]->element.getPosition();
             grid.tiles_.emplace_back(new Tile(v,tile_length, tile_position));
             int size = grid.tiles_.size();
             std::swap(grid.tiles_[v], grid.tiles_[size-1]);

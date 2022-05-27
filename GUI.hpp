@@ -1,7 +1,6 @@
-#include <SFML/Graphics/Rect.hpp>
+#include <SFML/Graphics.hpp>
 #include <memory>
 #include <iostream>
-#include <SFML/Graphics.hpp>
 
 enum class ButtonType {};
 
@@ -26,6 +25,7 @@ struct Button {
         element.setOutlineThickness(this->element_outline_thickness);
         element.setFillColor(sf::Color::Transparent);
     }
+
     sf::Text text;
     sf::Font& font;
     sf::RectangleShape element;
@@ -38,6 +38,7 @@ struct Button {
     float element_outline_thickness = 2.0;
     int button_text_char_size = 24; //24 is default value
     std::string button_text;
+    bool clicked = false;
 
     void draw(sf::RenderWindow& window) { 
         window.draw(this->element);
@@ -54,12 +55,16 @@ struct Button {
             }
         }
         sf::Color result;
-        if(!flag)
-            result = sf::Color::Transparent;
-        else
-            result = this->hover_color;
-
-        this->element.setFillColor(result);
+        if(clicked == false){
+            if(!flag)
+                result = sf::Color::Transparent;
+            else
+                result = this->hover_color;
+            this->element.setFillColor(result);
+        }
+        else if(clicked == true){
+            this->element.setFillColor(this->clicked_color);
+        }
     }
 
 };

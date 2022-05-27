@@ -50,7 +50,7 @@ class Grid {
 
         void incrementStep(sf::Event& event);
 
-
+        std::string current_state = "";
         int iteration_factor = 5000;
         int iteration = 0;
         sf::Time delta_time;
@@ -245,10 +245,6 @@ Grid::Grid(int grid_length){
 }
 
 void Grid::draw(sf::RenderWindow &window){
-    /*
-    for(auto k: tiles)
-        window.draw(k.tile);
-    */
     
     for(auto& tile: tiles_)
         tile->draw(window);
@@ -257,23 +253,15 @@ void Grid::draw(sf::RenderWindow &window){
 
 void Grid::setDefaultGridState(){
     adjList = defaultGridList;
-    tiles[startPos].tile.setFillColor(sf::Color::Yellow);
-    tiles[goalPos].tile.setFillColor(sf::Color::Red);
+    tiles[startPos].element.setFillColor(sf::Color::Yellow);
+    tiles[goalPos].element.setFillColor(sf::Color::Red);
     for(int i = 0; i < tiles.size(); i++){
-        if(i != startPos && i != goalPos && tiles[i].tile.getFillColor() != sf::Color::Blue)
-            tiles[i].tile.setFillColor(sf::Color::White);
+        if(i != startPos && i != goalPos && tiles[i].element.getFillColor() != sf::Color::Blue)
+            tiles[i].element.setFillColor(sf::Color::White);
     }
 }
 
 void Grid::resetConfigurationState(){
-    /*
-    for(int i = 0; i < tiles.size(); i++){
-        if(tiles[i].tile.getFillColor() == sf::Color::Green){
-            tiles[i].tile.setFillColor(sf::Color::White);
-        }
-    }
-    */
-
     for(auto& tile: tiles_){
         if(tile->part_of_path)
             tile->part_of_path = false;
@@ -289,7 +277,7 @@ void Grid::update(AppState& app_state){
         sf::Vector2f new_position;
         new_position.x = leftCornerPosition.x + col*tileLength;
         new_position.y = leftCornerPosition.y + row*tileLength;
-        tile->tile.setPosition(new_position);
+        tile->element.setPosition(new_position);
         tile->update();
         idx++;
     }
@@ -297,14 +285,14 @@ void Grid::update(AppState& app_state){
     
 
     int current_state_idx = app_state.current_interaction_state;
-    std::string current_state = app_state.interaction_states[current_state_idx];
+    current_state = app_state.interaction_states[current_state_idx];
     
     if(current_state == "Playground"){
         resetConfigurationState();
         bfs();
     }
     else if(current_state == "Simulate"){
-
+        std::cout << "lol\n";
     }
 
     /*
@@ -344,11 +332,11 @@ void Grid::update(AppState& app_state){
         for(int i = 0; i < length; i++){
             for(int k = 0; k < length; k++){
                 sf::Vector2f size(tileLength, tileLength);
-                sf::Vector2f pos = tiles[i*length+k].tile.getPosition();
+                sf::Vector2f pos = tiles[i*length+k].element.getPosition();
                 pos.x+=k*diff;
                 pos.y+=i*diff;
-                tiles[i*length+k].tile.setPosition(pos);
-                tiles[i*length+k].tile.setSize(size);
+                tiles[i*length+k].element.setPosition(pos);
+                tiles[i*length+k].element.setSize(size);
             } 
         }
     }
@@ -357,11 +345,11 @@ void Grid::update(AppState& app_state){
         for(int i = 0; i < length; i++){
             for(int k = 0; k < length; k++){
                 sf::Vector2f size(tileLength, tileLength);
-                sf::Vector2f pos = tiles[i*length+k].tile.getPosition();
+                sf::Vector2f pos = tiles[i*length+k].element.getPosition();
                 pos.x-=k*diff; 
                 pos.y-=i*diff;
-                tiles[i*length+k].tile.setPosition(pos);
-                tiles[i*length+k].tile.setSize(size);
+                tiles[i*length+k].element.setPosition(pos);
+                tiles[i*length+k].element.setSize(size);
             }
         }
     }
