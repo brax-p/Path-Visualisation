@@ -1,4 +1,5 @@
 #include <SFML/System.hpp>
+#include <iostream>
 class AppState {
     public:
         int64_t delta_time_in_microseconds = 0;
@@ -11,8 +12,9 @@ class AppState {
         //as well as playground where a singular path is shown and the user
         //can adjust walls and the spawn node and the goal node
         
-        std::string interaction_states[2] = {
+        std::string interaction_states[3] = {
                 "Playground",
+                "Simulate_Prep",
                 "Simulate"
         };
         int current_interaction_state = 0;

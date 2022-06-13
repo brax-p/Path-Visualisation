@@ -6,11 +6,27 @@
 #include "GUI.hpp"
 
 template <class T>
-int onAnElement(int x, int y, std::vector<std::unique_ptr<T>>& list){
+int onAnElement_ptr(int x, int y, std::vector<std::unique_ptr<T>>& list){
     int idx = 0;
     for(auto& component : list){
         sf::Vector2f size = component->element.getSize();
         sf::Vector2f position = component->element.getPosition();
+        if(x > position.x && x < position.x + size.x){
+            if(y > position.y && y < position.y + size.y){
+                return idx;
+            }
+        }
+        idx++;
+    }
+    return -1;
+}
+
+template <class T>
+int onAnElement(int x, int y, std::vector<T>& list) {
+    int idx = 0;
+    for(auto& component : list){
+        sf::Vector2f size = component.element.getSize();
+        sf::Vector2f position = component.element.getPosition();
         if(x > position.x && x < position.x + size.x){
             if(y > position.y && y < position.y + size.y){
                 return idx;
@@ -33,7 +49,6 @@ class Model {
         void handleLeftReleased();
         void handleRightClick(int x, int y);
         void printGridTiles();
-        int onAButton(int x, int y);
 
         void setState(std::string state);
 	    std::vector<std::string> states;
@@ -102,28 +117,13 @@ void Model::update(sf::RenderWindow &window, int mouseX, int mouseY, AppState& a
     grid.update(app_state); 
     //std::cout << (1/app_state.delta_time) << "Frames per second\n";
     for(auto& button: gui.buttons){
-        button->update(mouseX, mouseY);
+        button.update(mouseX, mouseY);
     }
 }
 
 void Model::draw(){
     this->grid.draw(this->window);
     this->gui.draw(this->window);
-}
-
-int Model::onAButton(int x, int y) {
-    int idx = 0;
-    for(auto& button: gui.buttons) {
-        sf::Vector2f size = button->element.getSize();
-        sf::Vector2f position = button->element.getPosition();
-        if(x > position.x && x < position.x + size.x){
-            if(y > position.y && y < position.y + size.y){
-                return idx;
-            }
-        }
-        idx++;
-    }
-    return -1;
 }
 
 void Model::printGridTiles() {
@@ -157,10 +157,8 @@ void Model::printGridTiles() {
 
 
 void Model::handleLeftClick(int x, int y){
-    int test_button = onAnElement(x,y, grid.tiles_);
-    std::cout << "button pressed is: " << test_button << "\n";
-    int tileNumber = onAnElement(x,y, grid.tiles_);
-    int buttonNumber = onAButton(x,y);
+    int tileNumber = onAnElement_ptr(x,y, grid.tiles_);
+    int buttonNumber = onAnElement(x,y,gui.buttons);
     bool onAnElement = (tileNumber != -1 || buttonNumber != -1) ? true : false;
     if(onAnElement == true){
         if(tileNumber > -1){ //if the current left click is ontop of a tile
@@ -203,28 +201,43 @@ void Model::handleLeftClick(int x, int y){
                 grid.removeVertex(tileNumber);
             }
         }
-        else if(buttonNumber > -1){
+        
+        else if(buttonNumber > -1 && gui.buttons[buttonNumber].is_visible == true){
             //std::cout << "button number is: " << buttonNumber << "\n";
-            gui.buttons[buttonNumber]->clicked = true;   
+            Button& b = gui.buttons[buttonNumber];
+            b.clicked = true;
             current_clicked_button = buttonNumber;
-            if(gui.buttons[buttonNumber]->button_text == "Start Simulation") {
-                int sim_idx = 0;
-                for(auto& state : app_state.interaction_states){
-                    if(state=="Simulation"){
-                        
-                    }
-                    sim_idx++;
-                }
+            if(b.button_text == "Start Simulation") {
+                app_state.current_interaction_state = 1;
+                gui.buttons[1].is_visible = true;
+                gui.buttons[2].is_visible = true;
+                gui.buttons[3].is_visible = true;
+            }
+            else if(b.button_text == "Reset Simulation"){
+                //reset the grid to before the confirm -- dont go back to playground
+                //app_state.current_interaction_state = 0;
+                app_state.current_interaction_state = 1;
+                grid.step = 0;
+            }
+            else if(b.button_text == "Confirm"){
+                app_state.current_interaction_state = 2;
+                grid.first_time_prep = true;
+            }
+            else if(b.button_text == "Cancel"){
+                app_state.current_interaction_state = 0;
+                gui.buttons[1].is_visible = false;
+                gui.buttons[2].is_visible = false;
+                gui.buttons[3].is_visible = false;
             }
         }
     }
 }
 
 void Model::handleLeftReleased() {
-        gui.buttons[current_clicked_button]->clicked = false;
+        gui.buttons[current_clicked_button].clicked = false;
 }
 void Model::handleRightClick(int x, int y){
-    int tileNumber = onAnElement(x,y, grid.tiles_);
+    int tileNumber = onAnElement_ptr(x,y, grid.tiles_);
     if(tileNumber != -1){
         Type type = grid.tiles_[tileNumber]->type();
         if(type == Type::Wall){

@@ -15,7 +15,6 @@ class Tile {
         sf::RectangleShape element;
         
         virtual void update() {
-
             if(this->part_of_path)
                 element.setFillColor(sf::Color::Green);
             else if(this->type() == Type::Tile){

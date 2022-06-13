@@ -32,7 +32,7 @@ class Grid {
         void printVector(std::vector<int>& vec);
 
         void showSinglePath(std::vector<int>& path);
-        void simulateAlgorithm(std::vector<std::vector<int>>& all_paths);
+        void showCurrentPathState();
 
         void setStartPos(int startPos){this->startPos = startPos;}
         int getStartPos(){return this->startPos;}
@@ -49,13 +49,16 @@ class Grid {
         void addVertex(int tileNumber);
 
         void incrementStep(sf::Event& event);
+        
 
+        int step_limit = 0;
         std::string current_state = "";
         int iteration_factor = 5000;
         int iteration = 0;
         sf::Time delta_time;
-        int display_state = 1;
+        int display_state = 0;
         bool activePathing = true;
+        bool first_time_prep = true;
         int tileLength = 50;
         int prevTileLength = 50;
         int step = 0;
@@ -268,6 +271,14 @@ void Grid::resetConfigurationState(){
     }
 }
 
+void Grid::showCurrentPathState() {
+    for(int i = 0; i <= display_state; i++){
+        for(int k = 0; k < total_algorithm_steps[i].size(); k++){
+            this->tiles_[total_algorithm_steps[i][k]]->part_of_path = true;
+        }
+    }
+}
+
 void Grid::update(AppState& app_state){
     int idx = 0;
     for(auto& tile: tiles_){
@@ -281,18 +292,26 @@ void Grid::update(AppState& app_state){
         tile->update();
         idx++;
     }
-
-    
-
+    display_state = step;
     int current_state_idx = app_state.current_interaction_state;
     current_state = app_state.interaction_states[current_state_idx];
-    
     if(current_state == "Playground"){
         resetConfigurationState();
-        bfs();
+        newBfs();
     }
-    else if(current_state == "Simulate"){
-        std::cout << "lol\n";
+    else if(current_state == "Simulate_Prep"){
+        //std::cout << "lol\n";
+        step_limit = total_algorithm_steps.size();
+        resetConfigurationState();
+        //show current state
+    }
+    else if(current_state == "Simulate") {
+        if(first_time_prep){
+            bfs();
+            step_limit = total_algorithm_steps.size();
+            first_time_prep = false;
+        }
+        showCurrentPathState();
     }
 
     /*
@@ -377,20 +396,20 @@ void Grid::dfs(){
     }
 }
 
-void Grid::bfs(){   
-    int listSize = length*length;
+void Grid::bfs() {
+    int size = length * length;
     std::queue<int> queue;
     queue.push(startPos);
-    std::vector<bool> visited(listSize, false);
-    std::vector<int> previous(listSize);
+    std::vector<bool> visited(size, false);
+    std::vector<int> previous(size);
     visited[startPos] = true;
-
     bool found = false;
-    
-    while (!queue.empty() && found == false) {
+    std::vector<std::vector<int>> current_iteration_paths;
+    while(!queue.empty() && found == false){
         int u = queue.front();
         queue.pop();
-        for (int i = 0; i < adjList[u].size(); ++i) {
+        std::vector<int> current_neighbors;
+        for(int i = 0; i < adjList[u].size(); i++){
             int v = adjList[u][i];
             if(visited[v] == false){
                 visited[v] = true;
@@ -399,10 +418,13 @@ void Grid::bfs(){
                 if(v == goalPos){
                     found = true;
                 }
-            }
+                current_neighbors.push_back(v);
+            }   
         }
+        current_iteration_paths.push_back(current_neighbors);
     }
-    showSinglePath(previous);
+    total_algorithm_steps.erase(total_algorithm_steps.begin(), total_algorithm_steps.end());
+    total_algorithm_steps = current_iteration_paths;
 }
 
 void Grid::newBfs() {
@@ -410,8 +432,11 @@ void Grid::newBfs() {
     std::queue<int> queue;
     queue.push(startPos);
     std::vector<bool> visited(size, false);
-    
-    while(!queue.empty()){
+    std::vector<int> previous(size);
+    visited[startPos] = true;
+    bool found = false;
+    std::vector<std::vector<int>> current_iteration_paths;
+    while(!queue.empty() && found == false){
         int u = queue.front();
         queue.pop();
         std::vector<int> current_neighbors;
@@ -419,16 +444,19 @@ void Grid::newBfs() {
             int v = adjList[u][i];
             if(visited[v] == false){
                 visited[v] = true;
+                previous[v] = u;
                 queue.push(v);
+                if(v == goalPos){
+                    found = true;
+                }
                 current_neighbors.push_back(v);
             }   
         }
-        this->total_algorithm_steps.push_back(current_neighbors);
+        current_iteration_paths.push_back(current_neighbors);
     }
-}
-
-void simulateAlgorithm(std::vector<std::vector<int>>& all_paths){
-    
+    total_algorithm_steps.erase(total_algorithm_steps.begin(), total_algorithm_steps.end());
+    total_algorithm_steps = current_iteration_paths;
+    showSinglePath(previous);
 }
 
 void Grid::showSinglePath(std::vector<int>& path){
@@ -451,10 +479,13 @@ void Grid::showSinglePath(std::vector<int>& path){
 }
 
 void Grid::incrementStep(sf::Event& event){
+    std::cout << step << "\n";
     if(event.key.code == sf::Keyboard::Right){
-        step++;
+        if(step < step_limit-2)
+            step++;
     }
     else if(event.key.code == sf::Keyboard::Left){
-        step--;
+        if(step > 0)
+            step--;
     }
 }

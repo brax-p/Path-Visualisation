@@ -5,9 +5,9 @@
 enum class ButtonType {};
 
 struct Button {
-    Button(sf::Font& font, std::string button_text="Default Text", sf::Vector2f element_position = sf::Vector2f(0.0,0.0)) : font(font) {
+    Button(sf::Font& font, std::string button_text="Default Text", sf::Vector2f element_position = sf::Vector2f(0.0,0.0), bool isVisible=true) : font(font) {
+        is_visible = isVisible;
         this->button_text = button_text;
-        
         text.setFont(this->font);
         text.setString(this->button_text);
         text.setCharacterSize(button_text_char_size);
@@ -39,10 +39,13 @@ struct Button {
     int button_text_char_size = 24; //24 is default value
     std::string button_text;
     bool clicked = false;
+    bool is_visible = false;
 
     void draw(sf::RenderWindow& window) { 
-        window.draw(this->element);
-        window.draw(this->text);
+        if(is_visible){
+            window.draw(this->element);
+            window.draw(this->text);
+        }
     }
 
     void update(int mouseX, int mouseY){
@@ -66,46 +69,48 @@ struct Button {
             this->element.setFillColor(this->clicked_color);
         }
     }
-
-};
-
-struct Toggler : Button {
-    
-};
-
-struct Iterator : Button {
-
-};
-
-struct Component {
-    Component();
-    std::vector<std::unique_ptr<Button>> buttons;
 };
 
 class GUI {
     public:
         GUI();
         sf::Font font;
-        std::vector<std::unique_ptr<Button>> buttons;
+        std::vector<Button> buttons;
         void draw(sf::RenderWindow& window);
 };
 
 GUI::GUI() {
+
     if(!this->font.loadFromFile("./fonts/Akshar.ttf")){
         std::cout << "Error loading font\n";
     }
     else{
         std::cout << "Loaded font successfully!\n";
     }
+
     sf::Vector2f start_sim_pos(100.0, 50.0);
-    this->buttons.emplace_back(new Button(this->font, "Start Simulation", start_sim_pos));
+    Button start_simulation(this->font, "Start Simulation", start_sim_pos);
+    buttons.push_back(start_simulation);
+
     sf::Vector2f reset_sim_pos = start_sim_pos;
-    reset_sim_pos.x += (50+this->buttons[0]->element.getSize().x);
-    this->buttons.emplace_back(new Button(this->font, "Reset Simulation", reset_sim_pos));
+    reset_sim_pos.x += (50+buttons[0].element.getSize().x);
+    Button reset_simulation(this->font, "Reset Simulation", reset_sim_pos, false);
+    buttons.push_back(reset_simulation);
+
+
+    sf::Vector2f confirm_sim_pos = reset_sim_pos;
+    confirm_sim_pos.x += (50+buttons[1].element.getSize().x);
+    Button confirm_simulation(this->font, "Confirm", confirm_sim_pos, false);
+    buttons.push_back(confirm_simulation);
+
+
+    sf::Vector2f cancel_sim_pos = confirm_sim_pos;
+    cancel_sim_pos.x += (50+buttons[2].element.getSize().x);
+    Button cancel_simulation(this->font, "Cancel", cancel_sim_pos, false);
+    buttons.push_back(cancel_simulation);
 }
 
 void GUI::draw(sf::RenderWindow& window){
-    for(auto& button: this->buttons){
-        button->draw(window);
-    }
+    for(auto& button : buttons)
+        button.draw(window);
 }

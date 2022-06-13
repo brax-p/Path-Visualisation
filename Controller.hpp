@@ -10,7 +10,7 @@ class Controller{
         
         void updateEvent(sf::Event &event);
         void update(sf::RenderWindow &window, AppState& app_state);
-
+        
         int delta_time;
     private:
         Model& model;
