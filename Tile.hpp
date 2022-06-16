@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <iostream>
 
 enum class Type {Tile, Spawn, Goal, Wall};
 
@@ -15,10 +16,12 @@ class Tile {
         sf::RectangleShape element;
         
         virtual void update() {
-            if(this->part_of_path)
+            if(this->part_of_path && this->type() == Type::Tile){
                 element.setFillColor(sf::Color::Green);
-            else if(this->type() == Type::Tile){
-                element.setFillColor(sf::Color::White);
+            }
+            else{
+                if(this->type() == Type::Tile)
+                    element.setFillColor(sf::Color::White);
             }
         }
 

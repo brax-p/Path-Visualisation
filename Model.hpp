@@ -76,6 +76,7 @@ class Model {
         
         int display_state = 1;
         int current_clicked_button;
+
         AppState& app_state;
         GUI& gui;
         Grid& grid;
@@ -153,9 +154,6 @@ void Model::printGridTiles() {
     }
 }
 
-
-
-
 void Model::handleLeftClick(int x, int y){
     int tileNumber = onAnElement_ptr(x,y, grid.tiles_);
     int buttonNumber = onAnElement(x,y,gui.buttons);
@@ -196,14 +194,13 @@ void Model::handleLeftClick(int x, int y){
                     int idx = grid.tiles_.size()-1;
                     std::swap(grid.tiles_[v], grid.tiles_[idx]);
                     grid.tiles_.erase(grid.tiles_.begin()+idx+1);
+                    grid.removeVertex(tileNumber);
                 }
                 //Handle adjacency list changes needed;
-                grid.removeVertex(tileNumber);
             }
         }
         
         else if(buttonNumber > -1 && gui.buttons[buttonNumber].is_visible == true){
-            //std::cout << "button number is: " << buttonNumber << "\n";
             Button& b = gui.buttons[buttonNumber];
             b.clicked = true;
             current_clicked_button = buttonNumber;
@@ -212,22 +209,34 @@ void Model::handleLeftClick(int x, int y){
                 gui.buttons[1].is_visible = true;
                 gui.buttons[2].is_visible = true;
                 gui.buttons[3].is_visible = true;
+                gui.buttons[4].is_visible = true;
+                gui.buttons[5].is_visible = true;
             }
             else if(b.button_text == "Reset Simulation"){
                 //reset the grid to before the confirm -- dont go back to playground
                 //app_state.current_interaction_state = 0;
                 app_state.current_interaction_state = 1;
                 grid.step = 0;
+                grid.first_time_prep = true;
             }
             else if(b.button_text == "Confirm"){
-                app_state.current_interaction_state = 2;
-                grid.first_time_prep = true;
+                app_state.current_interaction_state = 2; //make current_state == "Simulate"
+                grid.step = 0;
+                grid.iteration = 0;
             }
             else if(b.button_text == "Cancel"){
                 app_state.current_interaction_state = 0;
                 gui.buttons[1].is_visible = false;
                 gui.buttons[2].is_visible = false;
                 gui.buttons[3].is_visible = false;
+                gui.buttons[4].is_visible = false;
+                gui.buttons[5].is_visible = false;
+            }
+            else if(b.button_text == "BFS"){
+                grid.current_algorithm = Algos::BFS;
+            }
+            else if(b.button_text == "DFS"){
+                grid.current_algorithm = Algos::DFS;
             }
         }
     }
@@ -252,4 +261,3 @@ void Model::handleRightClick(int x, int y){
         }
     }
 }
-

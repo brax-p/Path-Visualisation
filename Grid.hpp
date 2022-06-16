@@ -7,8 +7,8 @@
 #include <limits>
 #include <memory>
 
+enum class Algos{DFS, BFS};
 
-const int INF = std::numeric_limits<int>::max();
 class Grid {
     public:
         Grid(int grid_length);
@@ -19,7 +19,7 @@ class Grid {
         std::vector<std::vector<int>> adjList;
         std::vector<std::vector<int>> defaultGridList;
         std::vector<std::vector<int>> pathSteps;
-        std::vector<std::vector<int>> total_algorithm_steps;
+        std::vector<int> algo_steps;
         std::vector<int> walls;
 
         void draw(sf::RenderWindow& window);
@@ -27,12 +27,12 @@ class Grid {
 
         void dfs();
         void bfs();
-        void newBfs();
+        void playground_Bfs();
 
         void printVector(std::vector<int>& vec);
 
         void showSinglePath(std::vector<int>& path);
-        void showCurrentPathState();
+        void show_algo();
 
         void setStartPos(int startPos){this->startPos = startPos;}
         int getStartPos(){return this->startPos;}
@@ -47,13 +47,14 @@ class Grid {
 
         void removeVertex(int tileNumber);
         void addVertex(int tileNumber);
+        bool is_a_wall(int tile_number);
 
         void incrementStep(sf::Event& event);
         
-
+        bool playground_mode = true;
         int step_limit = 0;
         std::string current_state = "";
-        int iteration_factor = 5000;
+        int iteration_factor = 5;
         int iteration = 0;
         sf::Time delta_time;
         int display_state = 0;
@@ -62,6 +63,7 @@ class Grid {
         int tileLength = 50;
         int prevTileLength = 50;
         int step = 0;
+        Algos current_algorithm;
         int length;
     private:
         sf::Vector2f leftCornerPosition;
@@ -81,6 +83,13 @@ void Grid::removeVertex(int tileNumber){
     }
 }
 
+bool Grid::is_a_wall(int tile_number){
+    bool result = false;
+    if(tiles_[tile_number]->type() == Type::Wall)
+        result = true;
+    return result;
+}
+
 void Grid::addVertex(int tileNumber){
     int rowSize = this->length;
     int row = tileNumber / rowSize;
@@ -93,47 +102,42 @@ void Grid::addVertex(int tileNumber){
 
     (tileNumber % rowSize == 0) ? leftEdge = true: leftEdge = false;
     (tileNumber % rowSize == rowSize-1) ? rightEdge = true: rightEdge = false;
-
+    bool left_is_tile = true;
+    bool right_is_tile = true;
+    bool top_is_tile = true;
+    bool bottom_is_tile = true;
     if(leftEdge){
-        adjList[tileNumber].push_back(rightTile);
-        if(row == 0){
-            adjList[tileNumber].push_back(bottomTile);
-        }
-        else if(row == rowSize - 1){
-            adjList[tileNumber].push_back(topTile);
-        }
-        else{
-            adjList[tileNumber].push_back(bottomTile);
-            adjList[tileNumber].push_back(topTile);
-        }
+        if(!is_a_wall(rightTile))
+            adjList[tileNumber].push_back(rightTile);
+        
     }
     else if(rightEdge){
-        adjList[tileNumber].push_back(leftTile);
-        if(row == 0){
-            adjList[tileNumber].push_back(bottomTile);
-        }
-        else if(row == rowSize - 1){
-            adjList[tileNumber].push_back(topTile);
-        }
-        else{
-            adjList[tileNumber].push_back(bottomTile);
-            adjList[tileNumber].push_back(topTile);
-        }
+        if(!is_a_wall(leftTile))
+            adjList[tileNumber].push_back(leftTile);
+        
     }
     else{
-        adjList[tileNumber].push_back(leftTile);
-        adjList[tileNumber].push_back(rightTile);
-        if(row == 0){
-            adjList[tileNumber].push_back(bottomTile);
+        if(!is_a_wall(leftTile))
+            adjList[tileNumber].push_back(leftTile);
+        if(!is_a_wall(rightTile))
+            adjList[tileNumber].push_back(rightTile);
+     
+    }
+    if(row == 0){
+            if(!is_a_wall(bottomTile))
+                adjList[tileNumber].push_back(bottomTile);
         }
         else if(row == rowSize - 1){
-            adjList[tileNumber].push_back(topTile);
+            if(!is_a_wall(topTile))
+                adjList[tileNumber].push_back(topTile);
         }
         else{
-            adjList[tileNumber].push_back(bottomTile);
-            adjList[tileNumber].push_back(topTile);
+            if(!is_a_wall(bottomTile))
+                adjList[tileNumber].push_back(bottomTile);
+            if(!is_a_wall(topTile))
+                adjList[tileNumber].push_back(topTile);
         }
-    }
+    
     for(auto vertex: adjList[tileNumber]){
         adjList[vertex].push_back(tileNumber);     
     }
@@ -147,6 +151,7 @@ void Grid::printVector(std::vector<int>& vec){
 }
 
 Grid::Grid(int grid_length){
+    current_algorithm = Algos::BFS;
     length = grid_length;
     std::vector<std::vector<int>> vec(length*length);
     pathSteps = vec;
@@ -266,16 +271,7 @@ void Grid::setDefaultGridState(){
 
 void Grid::resetConfigurationState(){
     for(auto& tile: tiles_){
-        if(tile->part_of_path)
-            tile->part_of_path = false;
-    }
-}
-
-void Grid::showCurrentPathState() {
-    for(int i = 0; i <= display_state; i++){
-        for(int k = 0; k < total_algorithm_steps[i].size(); k++){
-            this->tiles_[total_algorithm_steps[i][k]]->part_of_path = true;
-        }
+        tile->part_of_path = false;
     }
 }
 
@@ -297,21 +293,36 @@ void Grid::update(AppState& app_state){
     current_state = app_state.interaction_states[current_state_idx];
     if(current_state == "Playground"){
         resetConfigurationState();
-        newBfs();
+        playground_Bfs();
+        first_time_prep = true;
     }
     else if(current_state == "Simulate_Prep"){
-        //std::cout << "lol\n";
-        step_limit = total_algorithm_steps.size();
+        step_limit = algo_steps.size();
         resetConfigurationState();
-        //show current state
     }
     else if(current_state == "Simulate") {
         if(first_time_prep){
-            bfs();
-            step_limit = total_algorithm_steps.size();
+            if(current_algorithm == Algos::BFS){
+                std::cout << "bfs\n";
+                bfs();
+            }
+            else if(current_algorithm == Algos::DFS){
+                std::cout << "dfs\n";
+                dfs();
+            }
+            step_limit = algo_steps.size();
             first_time_prep = false;
         }
-        showCurrentPathState();
+        show_algo();
+        //showCurrentPathState();
+        if(iteration % iteration_factor == 0){
+            if(step < step_limit - 2){
+                step++;
+            }
+        }
+        if(step < step_limit - 2){
+            iteration++;
+        }
     }
 
     /*
@@ -379,7 +390,7 @@ void Grid::dfs(){
     int listSize = adjList.size();
     std::vector<bool> visited(listSize, false);
     std::vector<int> previous(listSize);
-
+    std::vector<int> paths;
     std::stack<int> stack;
     stack.push(startPos);
     while(stack.size() != 0){
@@ -387,12 +398,24 @@ void Grid::dfs(){
         stack.pop();
         if(visited[u] == false){
             visited[u] = true;
-            for(int i = adjList[u].size() - 1; i >= 0; i--){
-                if(visited[adjList[u][i]] == false){
-                    stack.push(adjList[u][i]);
+            paths.push_back(u);
+            if(u == goalPos)
+                break;
+            else{
+                for(int i = adjList[u].size() - 1; i >= 0; i--){
+                    if(visited[adjList[u][i]] == false){
+                        stack.push(adjList[u][i]);
+                    }
                 }
             }
         }
+    }
+    algo_steps = paths;
+}
+
+void Grid::show_algo(){
+    for(int i = 0; i < display_state+1; i++){
+        tiles_[algo_steps[i]]->part_of_path = true;
     }
 }
 
@@ -404,7 +427,7 @@ void Grid::bfs() {
     std::vector<int> previous(size);
     visited[startPos] = true;
     bool found = false;
-    std::vector<std::vector<int>> current_iteration_paths;
+    std::vector<int> current_paths;
     while(!queue.empty() && found == false){
         int u = queue.front();
         queue.pop();
@@ -418,16 +441,14 @@ void Grid::bfs() {
                 if(v == goalPos){
                     found = true;
                 }
-                current_neighbors.push_back(v);
+                current_paths.push_back(v);
             }   
         }
-        current_iteration_paths.push_back(current_neighbors);
     }
-    total_algorithm_steps.erase(total_algorithm_steps.begin(), total_algorithm_steps.end());
-    total_algorithm_steps = current_iteration_paths;
+    algo_steps = current_paths;
 }
 
-void Grid::newBfs() {
+void Grid::playground_Bfs() {
     int size = length * length;
     std::queue<int> queue;
     queue.push(startPos);
@@ -435,11 +456,9 @@ void Grid::newBfs() {
     std::vector<int> previous(size);
     visited[startPos] = true;
     bool found = false;
-    std::vector<std::vector<int>> current_iteration_paths;
     while(!queue.empty() && found == false){
         int u = queue.front();
         queue.pop();
-        std::vector<int> current_neighbors;
         for(int i = 0; i < adjList[u].size(); i++){
             int v = adjList[u][i];
             if(visited[v] == false){
@@ -449,13 +468,9 @@ void Grid::newBfs() {
                 if(v == goalPos){
                     found = true;
                 }
-                current_neighbors.push_back(v);
             }   
         }
-        current_iteration_paths.push_back(current_neighbors);
     }
-    total_algorithm_steps.erase(total_algorithm_steps.begin(), total_algorithm_steps.end());
-    total_algorithm_steps = current_iteration_paths;
     showSinglePath(previous);
 }
 

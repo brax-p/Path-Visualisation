@@ -108,6 +108,17 @@ GUI::GUI() {
     cancel_sim_pos.x += (50+buttons[2].element.getSize().x);
     Button cancel_simulation(this->font, "Cancel", cancel_sim_pos, false);
     buttons.push_back(cancel_simulation);
+
+    sf::Vector2f bfs_button_pos = cancel_sim_pos;
+    bfs_button_pos.x += (50+buttons[3].element.getSize().x);
+    Button bfs_button(this->font, "BFS", bfs_button_pos, false);
+    buttons.push_back(bfs_button);
+
+    sf::Vector2f dfs_button_pos = bfs_button_pos;
+    dfs_button_pos.x += (50+buttons[4].element.getSize().x);
+    Button dfs_button(this->font, "DFS", dfs_button_pos, false);
+    buttons.push_back(dfs_button);
+
 }
 
 void GUI::draw(sf::RenderWindow& window){

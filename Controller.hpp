@@ -70,10 +70,10 @@ void Controller::updateEvent(sf::Event &event){
             //pos is up scroll
             //negative is down scroll
             if(event.mouseWheelScroll.delta == 1){
-                this->model.grid.tileLength+=1;
+                //this->model.grid.tileLength+=1;
             }
             else if(event.mouseWheelScroll.delta == -1){
-                this->model.grid.tileLength-=1;
+                //this->model.grid.tileLength-=1;
             }
         }
     }
