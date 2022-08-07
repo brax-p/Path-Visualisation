@@ -118,6 +118,9 @@ GUI::GUI() {
     dfs_button_pos.x += (50+buttons[4].element.getSize().x);
     Button dfs_button(this->font, "DFS", dfs_button_pos, false);
     buttons.push_back(dfs_button);
+    for(int i = 1; i < buttons.size(); i++){
+        buttons[i].element.setOutlineColor(sf::Color::Blue);
+    }
 
 }
 

@@ -10,7 +10,7 @@ namespace Paths {
     };
     void App::run(std::string title){
         RenderWindow window(VideoMode(1200,960), title);
-        window.setPosition(sf::Vector2i(1500,50));
+        window.setPosition(sf::Vector2i(0,50));
         GUI gui;
         Grid g(16);
         Model m(g, window, gui, app_state);

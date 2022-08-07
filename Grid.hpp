@@ -54,7 +54,7 @@ class Grid {
         bool playground_mode = true;
         int step_limit = 0;
         std::string current_state = "";
-        int iteration_factor = 5;
+        int iteration_factor = 50;
         int iteration = 0;
         sf::Time delta_time;
         int display_state = 0;
@@ -303,11 +303,9 @@ void Grid::update(AppState& app_state){
     else if(current_state == "Simulate") {
         if(first_time_prep){
             if(current_algorithm == Algos::BFS){
-                std::cout << "bfs\n";
                 bfs();
             }
             else if(current_algorithm == Algos::DFS){
-                std::cout << "dfs\n";
                 dfs();
             }
             step_limit = algo_steps.size();
@@ -324,37 +322,6 @@ void Grid::update(AppState& app_state){
             iteration++;
         }
     }
-
-    /*
-        //run algorithm
-        // pseudo logic:
-        //
-        //      if currently running simulation,
-        //          every nth factor (when count % n == 0)
-        //          display next sequence of node discovery
-        //          
-        //          assuming the Data Structure is a vector of vectors where
-        //          each vector in the vector of vectors contains
-        //          a list of nodes being discovered that step + all other
-        //          nodes already discovered, there number of iterations needed is
-        //          vector.size() * n where vector.size() is the size of the vector
-        //          of vectors
-        //
-        //          In this context, since this->update() is executed every
-        //          program count, then at each iteration, perform the following:
-        //          vector current = vector sum_discovered_nodes
-        //          vector current += vector nth_step_discovered_nodes
-        //
-        //          this way, the current vector being used contains the previous
-        //          list of all discoverd nodes as well as the nodes discovered
-        //          at the current step. This allows for easy drawing each iteration 
-        //          and understanding about which nodes in the grid are supposed
-        //          to be discovered or not -- albeit not walls or spawn or goal
-        //          or just undiscovered
-
-    }*/
-
-
 
     //adjusting grid size if resized by the scroll up or scroll down action
     if(tileLength > prevTileLength){
