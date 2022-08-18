@@ -114,7 +114,6 @@ void Model::update(sf::RenderWindow &window, int mouseX, int mouseY, AppState& a
     else if(rightClickDown == false){
         printGrid = true;
     }
-    //this->gui.update(mouseX, mouseY);
     grid.update(app_state); 
     //std::cout << (1/app_state.delta_time) << "Frames per second\n";
     for(auto& button: gui.buttons){
@@ -196,7 +195,6 @@ void Model::handleLeftClick(int x, int y){
                     grid.tiles_.erase(grid.tiles_.begin()+idx+1);
                     grid.removeVertex(tileNumber);
                 }
-                //Handle adjacency list changes needed;
             }
         }
         
@@ -245,6 +243,7 @@ void Model::handleLeftClick(int x, int y){
 void Model::handleLeftReleased() {
         gui.buttons[current_clicked_button].clicked = false;
 }
+
 void Model::handleRightClick(int x, int y){
     int tileNumber = onAnElement_ptr(x,y, grid.tiles_);
     if(tileNumber != -1){
