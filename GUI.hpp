@@ -34,7 +34,7 @@ struct Button {
     sf::Color text_color = sf::Color::White;
     sf::Color outline_color = sf::Color::Red;
     sf::Color clicked_color = sf::Color::Yellow;
-    sf::Color hover_color = sf::Color::Cyan;
+    sf::Color hover_color = sf::Color::Green;
     float element_outline_thickness = 2.0;
     int button_text_char_size = 24; //24 is default value
     std::string button_text;
