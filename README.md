@@ -3,7 +3,7 @@ An interactive application that allows visualization of Breadth-First-Search and
 
 Walls can be added and removed, the spawn and goal nodes can be rearranged. <br />
 
-There are two modes: first, is automatic where the a single path is shown; second, is simulation mode where the algorithm and its steps are shown. <br />
+There are two modes: first, is automatic where there is a single path is shown; second, is simulation mode where the algorithm and its steps are shown. <br />
 
 This application follows a paradigm similar to the Model-View-Controller system. <br /> 
 
