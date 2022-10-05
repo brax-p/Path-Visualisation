@@ -1,7 +1,10 @@
 #pragma once
 #include "Controller.hpp"
+#include "GUI.hpp"
 #include <SFML/Graphics.hpp>
 #include <string>
+#include <imgui.h>
+#include <imgui-sfml.h>
 
 class App
 {
@@ -18,28 +21,31 @@ class App
 App::App()
 {
     title = "Paths!";
-    SCREEN_WIDTH = 1275;
-    SCREEN_HEIGHT = 800;
+    SCREEN_WIDTH = 1900;
+    SCREEN_HEIGHT = 1000;
 }
 
 void App::run()
 {
 
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), title, sf::Style::Titlebar | sf::Style::Close);
-    window.setPosition(sf::Vector2i(250, 125));
-
-    AppState *app_state = new AppState(OpState::Edit);
-    GUI gui;
-    Grid grid(15, app_state);
-    Model model(grid, window, gui, app_state);
+    window.setPosition(sf::Vector2i(0,0));
+    sf::Vector2f algoDisplayPos(25.0f, 25.0f);
+    sf::Vector2f algoDisplaySize(750.0f, 750.0f);
+    
+    AppState *appState = new AppState(OpState::INIT);
+    GUI gui(window);
+    Grid grid(15, appState, algoDisplayPos, algoDisplaySize);
+    Model model(grid, window, gui, appState);
     Controller controller(model);
 
+    sf::Clock deltaClock;
     while(window.isOpen())
     {
-        sf::Clock clock;
         sf::Event event;
         while(window.pollEvent(event))
         {
+            gui.processEvent(event);
             switch(event.type)
             {
                 case sf::Event::Closed:
@@ -56,14 +62,15 @@ void App::run()
             }
             controller.update_event(event);
         }
-        sf::Time epoch_begin = clock.getElapsedTime();
+        gui.update(deltaClock.restart());
+        gui.doStuff();
         controller.update(window);
         window.clear();
         model.draw();
+        gui.render();
         window.display();
-        sf::Time epoch_end = clock.restart();
-        //std::cout << "Frames per second: " << 1.0 / epoch_end.asSeconds() << "\n";
+        sf::Time epoch_end = deltaClock.restart();
+        std::cout << "Frames per second: " << 1.0 / epoch_end.asSeconds() << "\n";
     }
-    delete app_state;
-    std::cout << "Ending window size: " << window.getSize().x << "," << window.getSize().y << '\n';
+    delete appState;
 }

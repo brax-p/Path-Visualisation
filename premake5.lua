@@ -3,7 +3,7 @@ workspace "Paths!"
     configurations { "Debug", "Release" }
 
 
-local projectName = "PathsProject"
+local projectName = "Base Project"
 local projectKind = "ConsoleApp"
 local lang = "C++"
 local standard = (lang) .. "17"
@@ -16,21 +16,22 @@ local srcFiles =
 local excludeSrcFiles =
 {
     "src/lib/**",
-    "src/include/**"
 }
 
 local srcLinksRelease =
 {
     "sfml-system",
     "sfml-window",
-    "sfml-graphics"
+    "sfml-graphics",
+    "opengl32"
 }
 
 local srcLinksDebug =
 {
     "sfml-system-d",
     "sfml-window-d",
-    "sfml-graphics-d"
+    "sfml-graphics-d",
+    "opengl32"
 }
 
 project (projectName)
@@ -56,6 +57,10 @@ project (projectName)
     filter {}
         files (srcFiles)
         removefiles (excludeSrcFiles)
-        includedirs { "src/include/" }
+        includedirs { "src/include/",
+                      "src/include/SFML/**",
+                      "src/include/imgui/",
+                      "src/include/imgui/backends"
+                    }
 
     

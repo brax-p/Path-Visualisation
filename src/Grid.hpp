@@ -13,152 +13,138 @@ enum class Editing {None, Spawn, Wall, Goal};
 class Grid
 {
     public:
-        Grid(int p_grid_width, AppState *p_app_state);
+        Grid(int p_gridWidth, AppState *p_appState, sf::Vector2f displayAreaOrigin, sf::Vector2f displayAreaSize);
         void draw(sf::RenderWindow &window);
-        void remove_vertex(int p_vertex);
-        void add_vertex(int p_vertex);
+        void removeVertex(int p_vertex);
+        void addVertex(int p_vertex);
         void update();
-        void execute_algorithm();
-        bool handle_leftclick(int x, int y);
-        void handle_rightclick();
-        void print_adj_list();
-        void clear_grid();
-        void reset_simulation();
-        void set_app_state(OpState new_state);
+        void executeAlgorithm();
+        bool handleLeftClick(int x, int y);
+        void handleRightClick(int x, int y);
+        void printAdjList();
+        void clearGrid();
+        void resetSimulation();
+        void setAppState(OpState new_state);
+        bool isIntersecting(int x, int y);
+        Tile* getIntersectedTile(int x, int y);
+        void createAdjList();
+        void updateGridValues();
+        void setGridWidth(int p_newGridWidth);
+        int getGridWidth();
+        void Simulate();
+        void resetAndSimulate();
+        void clearGridOfWalls();
+        void decreaseGridSpawnChanger();
+        void setAlgorithm(Algos newAlgo);
+        
         std::pair<std::vector<int>, std::vector<int>> bfs();
         std::vector<int> dfs();
-        Editing edit_state;      
+        int removedVertices = 0;
+        Editing editState;      
+        bool isVisible;
+        int direction = 1;
         
     private:
-        Algos m_current_algo;
+        Algos m_currentAlgo;
 
-        AppState* m_app_state;
+        AppState* m_appState;
 
-        float m_tile_length;
-        int m_grid_width;
+        float m_tileWidth;
+        int m_gridWidth;
 
-        int m_prev_start_position;
-        int m_prev_goal_position;
-        int m_start_position;
-        int m_goal_position;
-        std::vector<int> m_goal_positions; // allow for multiple goal compatibility
+        int m_prevStartPosition;
+        int m_prevGoalPosition;
+        int m_startPosition;
+        int m_goalPosition;
+        std::vector<int> m_goalPositions; // allow for multiple goal compatibility
 
-        bool m_walls_have_changed;
-        bool m_just_simulated;
+        bool m_wallsHaveChanged;
+        bool m_justSimulated;
 
-        sf::Vector2f m_origin;
+        sf::Vector2f m_Origin;
+        sf::Vector2f m_Container;
 
-        std::vector<std::vector<int>> m_adj_list;
-        std::vector<std::vector<int>> m_default_adj_list; // keep a copy so no need to re-compute base adj list
-        std::vector<Tile> m_tiles;
+        std::vector<std::vector<int>> m_AdjList;
+        std::vector<std::vector<int>> m_defaultAdjList; // keep a copy so no need to re-compute base adj list
+        std::vector<Tile> m_Tiles;
 
         std::vector<int> m_algo_result_path;    //Single path
         std::vector<int> m_algo_result_total;   //Full exploration tree
 
 
-        int m_simulation_iteration;
-        int m_simulation_iteration_factor;
-        int m_simulation_iteration_limit;
-        int m_simulation_index;
-
-
+        int m_SimulationIteration;
+        int m_SimulationIteration_factor;
+        int m_SimulationIteration_limit;
+        int m_SimulationIndex;
 };
 
-Grid::Grid(int p_grid_width, AppState *p_app_state) : m_app_state(p_app_state)
+Grid::Grid(int p_gridWidth, AppState *p_appState, sf::Vector2f displayAreaOrigin, sf::Vector2f displayAreaSize) : m_appState(p_appState)
 {
+    isVisible = false;
+    editState = Editing::None;
 
-    edit_state = Editing::None;
+    m_wallsHaveChanged = true; // done to trigger first iteration of OpState::ShowPath 
+    m_justSimulated = true;
 
-    m_walls_have_changed = true; // done to trigger first iteration of OpState::ShowPath 
-    m_just_simulated = true;
+    m_currentAlgo = Algos::BFS;
 
-    m_current_algo = Algos::BFS;
+    m_gridWidth = p_gridWidth;
 
-    m_grid_width = p_grid_width;
+    m_goalPosition = m_gridWidth * m_gridWidth - 1;
+    m_prevGoalPosition = m_goalPosition;
 
-    m_goal_position = m_grid_width * m_grid_width - 1;
-    m_prev_goal_position = m_goal_position;
+    m_startPosition = 0;
+    m_prevStartPosition = m_startPosition;
+    
+    m_Container = displayAreaSize;
+    m_tileWidth = displayAreaSize.x / p_gridWidth; // x or y doesnt matter since grid is a square
 
-    m_start_position = 0;
-    m_prev_start_position = m_start_position;
+    m_Origin.x = displayAreaOrigin.x;
+    m_Origin.y = displayAreaOrigin.y;
 
-    m_tile_length = 50.f;
-
-    m_origin.x = 25.f;
-    m_origin.y = 25.f;
-
-    m_simulation_index = 0;
-    m_simulation_iteration = 0;
-    m_simulation_iteration_factor = 50;
-    m_simulation_iteration_limit = 500;
-
-    //Create the adjacency list representation and the list of Tiles that map to each vertex in the adjacency list
-    for(int i = 0; i < m_grid_width; ++i)
-    {
-        for(int j = 0; j < m_grid_width; ++j)
-        {
-            int current_vertex = i * m_grid_width + j;
-            sf::Vector2f tile_position((float)j*m_tile_length+m_origin.x, (float)i*m_tile_length+m_origin.y);
-            Type tile_type;
-            if(current_vertex == m_start_position)
-            {
-                tile_type = Type::Spawn;
-            }
-            else if(current_vertex == m_goal_position)
-            {
-                tile_type = Type::Goal;
-            }
-            else
-            {
-                tile_type = Type::Blank;
-            }
-            Tile temp(current_vertex, m_tile_length, tile_position, tile_type);
-            m_tiles.push_back(std::move(temp));
-
-            int right = i * m_grid_width + j + 1;
-            int left = i * m_grid_width + j - 1;
-            int up = (i - 1) * m_grid_width + j;
-            int down = (i + 1) * m_grid_width + j;
-
-            std::vector<int> current_list;
-
-            if(j > 0) current_list.push_back(left);
-            if(j < m_grid_width - 1) current_list.push_back(right);
-
-            if(i > 0) current_list.push_back(up);
-            if(i < m_grid_width - 1) current_list.push_back(down);
-
-            m_adj_list.push_back(std::move(current_list));
-        }
-    }
-    m_default_adj_list = m_adj_list;
+    m_SimulationIndex = 0;
+    m_SimulationIteration = 0;
+    m_SimulationIteration_factor = 50;
+    m_SimulationIteration_limit = 500;
+        
+    createAdjList();
+    m_defaultAdjList = m_AdjList;
     std::cout << '\n';
 }
 
 void Grid::draw(sf::RenderWindow &window)
 {   
-    for(auto &tile: m_tiles)
+    if(!isVisible) return;
+
+    for(auto &tile: m_Tiles)
     {
         tile.draw(window);
     }
 }
 
-void Grid::remove_vertex(int p_vertex)
+void Grid::removeVertex(int p_vertex)
 {
-   for(int i = 0; i < m_adj_list[p_vertex].size(); ++i)
-   {
-        int neighbor = m_adj_list[p_vertex][i];
-        for(int j = 0; j < m_adj_list[neighbor].size(); ++j)
+    auto removeItself = [&](int neighborVertex)
+    {
+        for(int i = 0; i < m_AdjList[neighborVertex].size(); i++)
         {
-            if(m_adj_list[neighbor][j] == p_vertex)
+            if(m_AdjList[neighborVertex][i] == p_vertex)
             {
-                m_adj_list[neighbor].erase(m_adj_list[neighbor].begin() + j);
+                std::swap(m_AdjList[neighborVertex][i], m_AdjList[neighborVertex][m_AdjList[neighborVertex].size() - 1]);
+                m_AdjList[neighborVertex].pop_back();
             }
         }
-   }
+        return;
+    };
+
+    if(p_vertex / m_gridWidth > 0)                  removeItself(p_vertex - m_gridWidth);
+    if(p_vertex / m_gridWidth < m_gridWidth - 1)    removeItself(p_vertex + m_gridWidth);
+    if(p_vertex % m_gridWidth > 0)                  removeItself(p_vertex - 1);
+    if(p_vertex % m_gridWidth < m_gridWidth - 1)    removeItself(p_vertex + 1);
+
 }
 
-void Grid::add_vertex(int p_vertex)
+void Grid::addVertex(int p_vertex)
 {
     //get left, right, up, and down.
     //then add current vertex to each valid space -- that means add to any tile that isnt a wall
@@ -166,13 +152,13 @@ void Grid::add_vertex(int p_vertex)
 
     std::vector<int> neighbors;
 
-    int row = p_vertex / m_grid_width;
-    int col = p_vertex % m_grid_width;
+    int row = p_vertex / m_gridWidth;
+    int col = p_vertex % m_gridWidth;
 
     if(col > 0)                neighbors.push_back(p_vertex - 1); // left neighbor exists
-    if(col < m_grid_width - 1) neighbors.push_back(p_vertex + 1); //right neighbor exists
-    if(row > 0)                neighbors.push_back(p_vertex - m_grid_width); // up neighbor exists
-    if(row < m_grid_width - 1) neighbors.push_back(p_vertex + m_grid_width); // down neighbor exists
+    if(col < m_gridWidth - 1) neighbors.push_back(p_vertex + 1); //right neighbor exists
+    if(row > 0)                neighbors.push_back(p_vertex - m_gridWidth); // up neighbor exists
+    if(row < m_gridWidth - 1) neighbors.push_back(p_vertex + m_gridWidth); // down neighbor exists
 
     //from current possible neighbors, check if can add to each neighbor then add
     for(int i = 0; i < neighbors.size(); ++i)
@@ -180,13 +166,13 @@ void Grid::add_vertex(int p_vertex)
         //If the tile that maps to the current neighbor isnt a wall, then add. Else, do nothing.
         //This ensures that no wall ever gets added to the adjacency list. This allows for simple approach
         //in remove_vertex().
-        if(m_tiles[neighbors[i]].tile_type != Type::Wall)
+        if(m_Tiles[neighbors[i]].tileType != Type::Wall)
         {
             //add neighbor to current vertex, then add current vertex to neighbor in adj list
 
-            m_adj_list[p_vertex].push_back(neighbors[i]);
+            m_AdjList[p_vertex].push_back(neighbors[i]);
 
-            m_adj_list[neighbors[i]].push_back(p_vertex);
+            m_AdjList[neighbors[i]].push_back(p_vertex);
         }
     }
 }
@@ -200,8 +186,22 @@ void Grid::update()
     //Edit and Simulate can use onclick because:
     //Edit doesn't display a path it only changes the configuration. Think of edit as ShowPath minus active path display
     //Simulate shows algorithmic results over time. The results are already known and the configuration cannot be changed.
-    
-    switch(m_app_state->current_state)
+    //
+/*
+    int num = 0;
+
+    for(int i = 0;
+        i < m_Tiles.size();
+        i++)
+    {
+        if(m_Tiles[i].tileType == Type::Wall)
+        {
+            num++;
+        }
+    }
+    std::cout << "Number of walls: " << num << " || " << "Number of removedVertices: " << removedVertices << '\n';
+*/
+    switch(m_appState->current_state)
     {   
         case OpState::Idle:
         {
@@ -211,30 +211,30 @@ void Grid::update()
         case OpState::ShowPath:
         {
             //this is easier than onclick functions. For Edit and Simulate however, onclicks are fine
-            if((m_prev_start_position != m_start_position) || (m_prev_goal_position != m_goal_position) || (m_walls_have_changed) || (m_just_simulated))
+            if((m_prevStartPosition != m_startPosition) || (m_prevGoalPosition != m_goalPosition) || (m_wallsHaveChanged) || (m_justSimulated))
             {
                 //With the new configurtation, get the new result of the path searching algorithm
-                execute_algorithm();
+                executeAlgorithm();
 
                 // need to update each previous tile that was part of path to a type of blank.
                 // "reset" the configuration to prep for path assignment
-                for(auto &tile : m_tiles)
+                for(auto &tile : m_Tiles)
                 {
                     tile.part_of_path = false;
                 }
 
                 //then get single path
-                int current = m_algo_result_path[m_goal_position];
-                while(current != m_start_position)
+                int current = m_algo_result_path[m_goalPosition];
+                while(current != m_startPosition)
                 {   
-                    m_tiles[current].part_of_path = true;
+                    m_Tiles[current].part_of_path = true;
                     current = m_algo_result_path[current];
                 }
 
-                m_walls_have_changed = false;
-                m_prev_goal_position = m_goal_position;
-                m_prev_start_position = m_start_position;
-                m_just_simulated = false;
+                m_wallsHaveChanged = false;
+                m_prevGoalPosition = m_goalPosition;
+                m_prevStartPosition = m_startPosition;
+                m_justSimulated = false;
 
             }
             else
@@ -251,36 +251,36 @@ void Grid::update()
 
         case OpState::Simulate:
         {   
-            if(m_simulation_index < m_algo_result_total.size()) // Dont include discovery of goal node
+            if(m_SimulationIndex < m_algo_result_total.size()) // Dont include discovery of goal node
             {
-                int tile_index = m_algo_result_total[m_simulation_index];
-                m_tiles[tile_index].part_of_path = true;
-                m_simulation_iteration += m_simulation_iteration_factor;
-                if(m_simulation_iteration > m_simulation_iteration_limit)
+                int tile_index = m_algo_result_total[m_SimulationIndex];
+                m_Tiles[tile_index].part_of_path = true;
+                m_SimulationIteration += m_SimulationIteration_factor;
+                if(m_SimulationIteration > m_SimulationIteration_limit)
                 {
-                    ++m_simulation_index;
-                    m_simulation_iteration = 0;
+                    ++m_SimulationIndex;
+                    m_SimulationIteration = 0;
                 }
             }
             else
             {
                 // simulation has finished
-                m_simulation_index = 0;
-                m_simulation_iteration = 0;
+                m_SimulationIndex = 0;
+                m_SimulationIteration = 0;
             }
             break;
         }
     }
-    for(auto &tile : m_tiles)
+    for(auto &tile : m_Tiles)
     {
         tile.update();
     }
 }
 
-void Grid::execute_algorithm()
+void Grid::executeAlgorithm()
 {
     // Use of switch over terniary
-    switch(m_current_algo)
+    switch(m_currentAlgo)
     {
         case Algos::BFS:
         {   
@@ -301,11 +301,11 @@ void Grid::execute_algorithm()
 
 std::pair<std::vector<int>, std::vector<int>> Grid::bfs()
 {
-    int size = m_grid_width * m_grid_width;
+    int size = m_gridWidth * m_gridWidth;
     std::queue<int> queue;
-    queue.push(m_start_position);
+    queue.push(m_startPosition);
     std::vector<bool> visited(size, false);
-    visited[m_start_position] = true;
+    visited[m_startPosition] = true;
     std::vector<int> previous(size);            // contains at each index, the vertex it was "discovered" from. Allows for single path representation
     bool found = false;
     std::vector<int> result_path;
@@ -313,15 +313,15 @@ std::pair<std::vector<int>, std::vector<int>> Grid::bfs()
     {
         int u = queue.front();
         queue.pop();
-        for(int i = 0; i < m_adj_list[u].size(); ++i)
+        for(int i = 0; i < m_AdjList[u].size(); ++i)
         {
-            int v = m_adj_list[u][i];
+            int v = m_AdjList[u][i];
             if(!visited[v])
             {
                 visited[v] = true;
                 previous[v] = u;   //the current vertex that is a neighbor of v, now has v as its parent -- or source -- node
                 queue.push(v);
-                if(v == m_goal_position)
+                if(v == m_goalPosition)
                 {
                     found = true;
                     break;
@@ -339,86 +339,251 @@ std::vector<int> Grid::dfs()
     return {};
 }
 
-bool Grid::handle_leftclick(int x, int y)
+bool Grid::handleLeftClick(int x, int y)
 {
     // return true if interacting with the grid. 
     // return false if not. This helps not computing other elements in the model like gui buttons since
-    // only 1 object can be clicked/interacted with at any time.
+    // only 1 object can be clicked/interacted with at any time. -- by design
 
-    // if on a tile, execute action based on Operation State
-    for(auto &tile : m_tiles)
+    if((!isVisible) || (m_appState->current_state != OpState::Edit))
+        return false;
+
+    Tile* selectedTile = getIntersectedTile(x, y); // no need to iterator over every tile in m_Tiles -> simply calculate which tile would be clicked given some coords, if any.
+    if(selectedTile != nullptr && (selectedTile->tileType == Type::Blank || selectedTile->tileType == Type::Path))
     {   
-        if(tile.is_intersecting(x,y) && ((tile.tile_type == Type::Blank || tile.tile_type == Type::Path))) //only allow changing to/from "valid" spaces
-        {
-            
-            switch(edit_state)
-            {
-                case Editing::Wall:
-                {
-                    remove_vertex(tile.vertex);
-                    tile.set_type(Type::Wall);
-                    m_walls_have_changed = true;
-                    break;
-                }
-                case Editing::Spawn:
-                {
-                    add_vertex(m_start_position);
-                    m_tiles[m_start_position].tile_type = Type::Blank;
-                    remove_vertex(tile.vertex);
-                    m_start_position = tile.vertex;
-                    tile.tile_type = Type::Spawn;
-                    break;
-                }
 
-                case Editing::Goal:
-                {   
-                    add_vertex(m_goal_position);
-                    m_tiles[m_goal_position].tile_type = Type::Blank;
-                    m_goal_position = tile.vertex;
-                    std::cout << "New Goal Pos: " << m_goal_position << '\n';
-                    tile.tile_type = Type::Goal;
-                    break;
-                }
+        clearGrid();
+        resetSimulation();
+        setAppState(OpState::Edit);
+
+        switch(editState)
+        {
+            case Editing::Wall:
+            {
+                removeVertex(selectedTile->vertex);
+                removedVertices++;
+                selectedTile->set_type(Type::Wall);
+                m_wallsHaveChanged = true;
+                break;
             }
-            
-            return true;
+            case Editing::Spawn:
+            {
+                addVertex(m_startPosition);
+                m_Tiles[m_startPosition].tileType = Type::Blank;
+                removeVertex(selectedTile->vertex);
+                m_startPosition = selectedTile->vertex;
+                selectedTile->tileType = Type::Spawn;
+                break;
+            }
+
+            case Editing::Goal:
+            {   
+                //addVertex(m_goalPosition); // not needed since valid tiles are only path / blank so already a part of adj list??
+                m_Tiles[m_goalPosition].tileType = Type::Blank;
+                m_goalPosition = selectedTile->vertex;
+                selectedTile->tileType = Type::Goal;
+                break;
+            }
         }
+        return true;
     }
     return false;
 }
 
-void Grid::print_adj_list()
+void Grid::handleRightClick(int mouseX, int mouseY)
 {
-    for(int i = 0; i < m_adj_list.size(); ++i)
+    Tile* selectedTile = getIntersectedTile(mouseX, mouseY);
+    if(selectedTile != nullptr)
+    {
+        clearGrid();
+        resetSimulation();
+        setAppState(OpState::Edit);
+        if(m_appState->current_state == OpState::Edit)
+        {
+        
+            if(selectedTile->tileType == Type::Wall)   
+            {
+                addVertex(selectedTile->vertex);
+                removedVertices--;
+                selectedTile->set_type(Type::Blank);
+            }
+        }
+    }
+}
+
+void Grid::printAdjList()
+{
+    for(int i = 0; i < m_AdjList.size(); ++i)
     {
         std::cout << i << ": ";
-        for(int j = 0; j < m_adj_list[i].size(); ++j)
+        for(int j = 0; j < m_AdjList[i].size(); ++j)
         {
-            std::cout << m_adj_list[i][j] << " ";
+            std::cout << m_AdjList[i][j] << " ";
         }
         std::cout << "\n";
     }
 }
 
-void Grid::set_app_state(OpState new_state)
+void Grid::setAppState(OpState new_state)
 {
-    m_app_state->current_state = new_state;
+    m_appState->current_state = new_state;
 }
 
-void Grid::clear_grid()
+void Grid::clearGrid()
 {
-    for(auto &tile : m_tiles)
+    for(auto &tile : m_Tiles)
     {
         if(tile.part_of_path)
         {
-            tile.tile_type = Type::Blank;
+            tile.tileType = Type::Blank;
             tile.part_of_path = false;
         }
     }
 }
 
-void Grid::reset_simulation()
+void Grid::resetSimulation()
 {
-    m_simulation_index = 0;
-    m_simulation_iteration = 0;
+    m_SimulationIndex = 0;
+    m_SimulationIteration = 0;
+}
+
+void Grid::Simulate()
+{
+    setAppState(OpState::Simulate);
+    clearGrid();
+    executeAlgorithm();
+    resetSimulation();
+}
+
+void Grid::resetAndSimulate()
+{
+    clearGrid();
+    executeAlgorithm();
+    setAppState(OpState::Simulate);
+    resetSimulation();
+}
+
+bool Grid::isIntersecting(int x, int y)
+{
+
+    float sizeX = m_gridWidth * m_tileWidth;
+    float sizeY = m_gridWidth * m_tileWidth;
+    if(x > m_Origin.x && x < m_Origin.x + sizeX)
+    {
+        if(y > m_Origin.y && y < m_Origin.y + sizeY)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+Tile* Grid::getIntersectedTile(int x, int y)
+{
+
+    float size = m_gridWidth * m_tileWidth;
+    Tile* result;
+    if(isIntersecting(x, y))
+    {
+        sf::Vector2f adjustedCoords(x - m_Origin.x, y - m_Origin.y);
+        adjustedCoords.x /= m_tileWidth;
+        adjustedCoords.y /= m_tileWidth;
+        int col = adjustedCoords.x;
+        int row = adjustedCoords.y;
+        int idx = row * m_gridWidth + col;
+        result = &m_Tiles[idx];
+    }
+    else
+    {
+        result = nullptr;
+    }
+    return result;
+}
+
+void Grid::createAdjList()
+{
+    m_AdjList = {};
+    m_Tiles = {};
+    //Create the adjacency list representation and the list of Tiles that map to each vertex in the adjacency list
+    for(int i = 0; i < m_gridWidth; ++i)
+    {
+        for(int j = 0; j < m_gridWidth; ++j)
+        {
+            int currentVertex = i * m_gridWidth + j;
+            sf::Vector2f tilePosition(static_cast<float>(j*m_tileWidth+m_Origin.x), static_cast<float>(i*m_tileWidth+m_Origin.y));
+            Type tileType;
+            if(currentVertex == m_startPosition)
+            {
+                tileType = Type::Spawn;
+            }
+            else if(currentVertex == m_goalPosition)
+            {
+                tileType = Type::Goal;
+            }
+            else
+            {
+                tileType = Type::Blank;
+            }
+            Tile temp(currentVertex, m_tileWidth, tilePosition, tileType);
+            m_Tiles.push_back(std::move(temp));
+
+            int right   = i * m_gridWidth + j + 1;
+            int left    = i * m_gridWidth + j - 1;
+            int up      = (i - 1) * m_gridWidth + j;
+            int down    = (i + 1) * m_gridWidth + j;
+
+            std::vector<int> currentList;
+
+            if(j > 0)               currentList.push_back(left);
+            if(j < m_gridWidth - 1) currentList.push_back(right);
+
+            if(i > 0)               currentList.push_back(up);
+            if(i < m_gridWidth - 1) currentList.push_back(down);
+
+            m_AdjList.push_back(std::move(currentList));
+        }
+    }
+}
+void Grid::updateGridValues()
+{
+    m_tileWidth = m_Container.x / m_gridWidth;
+    m_goalPosition = m_gridWidth * m_gridWidth - 1;
+    createAdjList();
+}
+
+void Grid::setGridWidth(int p_newGridWidth)
+{
+    m_gridWidth = p_newGridWidth;
+}
+
+int Grid::getGridWidth()
+{
+    return m_gridWidth;
+}
+
+void Grid::clearGridOfWalls()
+{
+    for(auto &tile : m_Tiles)
+    {
+        if(tile.tileType == Type::Wall)
+        {
+            addVertex(tile.vertex);
+            tile.tileType = Type::Blank;
+        }
+    }
+}
+
+void Grid::decreaseGridSpawnChanger()
+{
+    addVertex(m_startPosition);
+    m_Tiles[m_startPosition].tileType = Type::Blank;
+    removeVertex(0);
+    m_startPosition = 0;
+    m_Tiles[0].tileType = Type::Spawn;
+}
+
+void Grid::setAlgorithm(Algos newAlgo)
+{
+    m_currentAlgo = newAlgo;
 }

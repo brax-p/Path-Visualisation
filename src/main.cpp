@@ -11,9 +11,17 @@ int main(){
 //TODO:
 
 /*
-    1. Remake GUI class
-    2. Implement BFS
-    3. Make GUI functional with changing app states / full program "range of motion"
-    4. Apply weighted algorithms by using color grading on different tiles simulating heights
-
+ * Implement pages with functionality
+ *
+ * Tree Mode
+ *
+ * Algorithms abstraction?
+ *
+ * Button/Panel hover animations? sounds?
+ *
+ *
+ *      Next:
+ *          Add current Algo options to editing page:
+ *              Grid => BFS or DFS
+ *                      --> DFS implementation
 */

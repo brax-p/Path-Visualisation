@@ -7,14 +7,15 @@ enum class Type {Blank, Spawn, Goal, Wall, Path};
 class Tile 
 {
     public:
-        Tile(const uint16_t& p_vertex, const float& p_tile_length, const sf::Vector2f& p_tile_position, Type p_tile_type);
+        Tile(const uint16_t& p_vertex, const float& p_tile_length, const sf::Vector2f& p_tile_position, Type p_tileType);
         void draw(sf::RenderWindow &window);
         void update();
         void assign_type();
         bool is_intersecting(int x, int y);
         void set_type(Type type);
+        sf::Vector2f getSize();
         Type get_type();
-        Type tile_type;
+        Type tileType;
         bool part_of_path;
         uint16_t vertex;
 
@@ -24,7 +25,7 @@ class Tile
         sf::RectangleShape m_tile;
 };
 
-Tile::Tile(const uint16_t& p_vertex, const float& p_tile_length, const sf::Vector2f& p_tile_position, Type p_tile_type=Type::Blank)
+Tile::Tile(const uint16_t& p_vertex, const float& p_tile_length, const sf::Vector2f& p_tile_position, Type p_tileType=Type::Blank)
 {
     vertex = p_vertex;
 
@@ -35,12 +36,12 @@ Tile::Tile(const uint16_t& p_vertex, const float& p_tile_length, const sf::Vecto
 
     m_position = p_tile_position;
 
-    tile_type = p_tile_type;
+    tileType = p_tileType;
 
     m_tile.setSize(m_size);
     m_tile.setPosition(m_position);
     sf::Color tile_color;
-    switch(tile_type)
+    switch(tileType)
     {
         case Type::Blank:
           tile_color = sf::Color::White;
@@ -73,17 +74,17 @@ void Tile::update()
 {
     if(part_of_path)
     {
-        tile_type = Type::Path;
+        tileType = Type::Path;
     }
     else
     {
-        if(tile_type == Type::Path)
+        if(tileType == Type::Path)
         {
-            tile_type = Type::Blank;
+            tileType = Type::Blank;
         }
     }
 
-    switch(tile_type)
+    switch(tileType)
     {
         case Type::Path:
             m_tile.setFillColor(sf::Color::Green);
@@ -127,10 +128,15 @@ bool Tile::is_intersecting(int x, int y)
 
 void Tile::set_type(Type type)
 {
-    tile_type = type;
+    tileType = type;
 }
 
 Type Tile::get_type()
 {
-    return tile_type;
+    return tileType;
+}
+
+sf::Vector2f Tile::getSize()
+{
+    return m_size;
 }

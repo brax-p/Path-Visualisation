@@ -1,116 +1,103 @@
 #pragma once
-#include <SFML/Graphics.hpp>
-#include <memory>
-#include <iostream>
+#include <imgui.h>
+#include <imgui-sfml.h>
+//#include "AlgoModels.hpp"
 
-enum class ButtonType {};
+enum class Pages { NONE, START, MAIN, EDIT, SIMULATE };
 
-struct Button {
-    Button(sf::Font& font, std::string button_text="Default Text", sf::Vector2f element_position = sf::Vector2f(0.0f,0.0f), bool isVisible=true) : font(font) 
+struct Page
+{
+    Page() { init(); }
+    virtual ~Page() = default;
+    virtual void init() {}
+};
+struct Start : public Page
+{
+    Start(Pages* p_CurrentPage) { init(p_CurrentPage); }
+    void init(Pages* p_CurrentPage) 
     {
-        is_visible = isVisible;
-        this->button_text = button_text;
-        text.setFont(this->font);
-        text.setString(this->button_text);
-        text.setCharacterSize(button_text_char_size);
-        text.setFillColor(text_color);
-        text.setStyle(sf::Text::Bold);
-        text.setPosition(element_position);
-        
-        sf::FloatRect bounds = text.getGlobalBounds();
-        element_position.x = bounds.left;
-        element_position.y = bounds.top;
-        element_size = sf::Vector2f(bounds.width, bounds.height);
-        element.setSize(element_size);
-        element.setPosition(element_position);
-        element.setOutlineColor(outline_color);
-        element.setOutlineThickness(element_outline_thickness);
-        element.setFillColor(sf::Color::Transparent);
-    }
-
-    sf::Text text;
-    sf::Font& font;
-    sf::RectangleShape element;
-    sf::Vector2f element_position;
-    sf::Vector2f element_size;
-    sf::Color text_color = sf::Color::Black;
-    sf::Color outline_color = sf::Color::Blue;
-    sf::Color clicked_color = sf::Color::Yellow;
-    sf::Color hover_color = sf::Color::Green;
-    float element_outline_thickness = 2.0;
-    int button_text_char_size = 24; //24 is default value
-    std::string button_text;
-    bool clicked = false;
-    bool is_visible = false;
-
-    void draw(sf::RenderWindow& window) 
-    { 
-        if(is_visible){
-            window.draw(element);
-            window.draw(text);
+        ImVec2 windowSize = ImGui::GetMainViewport()->Size;
+        ImVec2 windowPos = ImGui::GetMainViewport()->Pos;
+        ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+        ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
+        ImGuiWindowFlags flags = 0; flags = (ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse);
+        ImGui::Begin("Title", NULL, flags);
+        ImVec2 buttonSize(400, 100);
+        ImVec2 buttonPos(windowPos.x + windowSize.x/2 - buttonSize.x/2, windowPos.y + windowSize.y/2 - buttonSize.y/2);
+        ImGui::SetCursorPos(buttonPos);
+        if(ImGui::Button("Start", buttonSize))
+        {
+            *p_CurrentPage = Pages::MAIN;
         }
-    }
-
-    void update(int mouseX, int mouseY)
-    {
-        int x = element.getPosition().x, y = element.getPosition().y;
-        int size_x = element.getSize().x, size_y = element.getSize().y;
-        bool flag = false;
-        if(mouseX > x && mouseX < x + size_x){
-            if(mouseY > y && mouseY < y + size_y){
-                flag = true;
-            }
-        }
-        sf::Color result;
-        if(clicked == false){
-            if(!flag)
-                result = sf::Color::Transparent;
-            else
-                result = hover_color;
-            element.setFillColor(result);
-        }
-        else if(clicked == true){
-            element.setFillColor(clicked_color);
-        }
+        ImGui::End();
     }
 };
 
-class GUI 
+struct Main : public Page
+{
+    Main(Pages* p_CurrentPage) { init(p_CurrentPage); }
+    void init(Pages* p_CurrentPage)
+    {
+        
+    }
+};
+
+class GUI
 {
     public:
-        GUI();
-        sf::Font font;
-        std::vector<Button> buttons;
-        sf::RectangleShape container;
-        void draw(sf::RenderWindow& window);
+        GUI(sf::RenderWindow& p_Window);
+        ~GUI();
+        void init();
+        void update(sf::Time epoch);
+        void render();
+        void doStuff();
+        void processEvent(sf::Event& event);
+    private:
+        sf::RenderWindow& m_Window;
+        Pages* m_CurrentPage;
 };
 
-GUI::GUI()
+GUI::GUI(sf::RenderWindow& p_Window) : m_Window(p_Window)
 {
-
-    if(!font.loadFromFile("./fonts/Akshar.ttf")){
-        std::cout << "Error loading font\n";
-    }
-    else{
-        std::cout << "Loaded font successfully!\n";
-    }
-
-    float x_distance = 50.f; //distance between two buttons horizontally
-    float y_distance = 50.0f; //distance betwee two buttons vertically
-
-    container.setSize(sf::Vector2f(400, 750));
-    container.setPosition(sf::Vector2f(825, 25));
-    container.setFillColor(sf::Color::White);
-    container.setOutlineColor(sf::Color::Red);
-    container.setOutlineThickness(2);
-
-    Button activate(font, "Start Simulation", sf::Vector2f(container.getPosition().x + 25, container.getPosition().y + 25), true);
-    buttons.push_back(std::move(activate));
+    init();
+    m_CurrentPage = new Pages;
+    *m_CurrentPage = Pages::START;
 }
 
-void GUI::draw(sf::RenderWindow& window)
+GUI::~GUI()
 {
-    window.draw(container);
-    for(auto& button : buttons)
-        button.draw(window);
+    ImGui::SFML::Shutdown();
+}
+
+void GUI::init()
+{
+    ImGui::SFML::Init(m_Window);
+}
+
+void GUI::update(sf::Time epoch)
+{
+    ImGui::SFML::Update(m_Window, epoch);
+}
+
+void GUI::render()
+{
+    ImGui::SFML::Render(m_Window);
+}
+
+void GUI::doStuff()
+{
+    switch(*m_CurrentPage)
+    {
+        case Pages::START:
+        {
+            Start start(m_CurrentPage);
+
+            break;
+        }
+    }
+}
+
+void GUI::processEvent(sf::Event& event)
+{
+    ImGui::SFML::ProcessEvent(m_Window, event);
 }
