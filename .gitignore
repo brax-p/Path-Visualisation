@@ -1,0 +1,12 @@
+#ignore
+.vs/
+
+bin/
+
+src/obj
+src/imgui.ini
+
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user

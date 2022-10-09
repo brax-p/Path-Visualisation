@@ -13,7 +13,7 @@ enum class Editing {None, Spawn, Wall, Goal};
 class Grid
 {
     public:
-        Grid(int p_gridWidth, AppState *p_appState, sf::Vector2f displayAreaOrigin, sf::Vector2f displayAreaSize);
+        Grid(int p_gridWidth, AppState& p_appState, sf::Vector2f displayAreaOrigin, sf::Vector2f displayAreaSize);
         void draw(sf::RenderWindow &window);
         void removeVertex(int p_vertex);
         void addVertex(int p_vertex);
@@ -30,24 +30,33 @@ class Grid
         void createAdjList();
         void updateGridValues();
         void setGridWidth(int p_newGridWidth);
-        int getGridWidth();
+        int  getGridWidth();
         void Simulate();
         void resetAndSimulate();
         void clearGridOfWalls();
+        void playOrPauseSimulate();
+        void decreaseGridSize();
+        void increaseGridSize();
         void decreaseGridSpawnChanger();
         void setAlgorithm(Algos newAlgo);
-        
+        void handleKeyPress(const sf::Event& event);
+        void changeAlgo(Algos newAlgo);
+        std::string slowdown();
+        std::string speedup();
+        std::string getStepString();
+
         std::pair<std::vector<int>, std::vector<int>> bfs();
-        std::vector<int> dfs();
+        std::pair<std::vector<int>, std::vector<int>> dfs();
         int removedVertices = 0;
         Editing editState;      
         bool isVisible;
         int direction = 1;
+        int speed = 1;
         
     private:
         Algos m_currentAlgo;
 
-        AppState* m_appState;
+        AppState& m_appState;
 
         float m_tileWidth;
         int m_gridWidth;
@@ -56,7 +65,7 @@ class Grid
         int m_prevGoalPosition;
         int m_startPosition;
         int m_goalPosition;
-        std::vector<int> m_goalPositions; // allow for multiple goal compatibility
+        std::vector<int> m_goalPositions; // allow for multiple goal compatibility eventuallt
 
         bool m_wallsHaveChanged;
         bool m_justSimulated;
@@ -76,12 +85,19 @@ class Grid
         int m_SimulationIteration_factor;
         int m_SimulationIteration_limit;
         int m_SimulationIndex;
+
+        int m_gridWidthLowerBound;
+        int m_gridWidthUpperBound;
 };
 
-Grid::Grid(int p_gridWidth, AppState *p_appState, sf::Vector2f displayAreaOrigin, sf::Vector2f displayAreaSize) : m_appState(p_appState)
+Grid::Grid(int p_gridWidth, AppState& p_appState, sf::Vector2f displayAreaOrigin, sf::Vector2f displayAreaSize) : 
+    m_appState(p_appState)
 {
     isVisible = false;
-    editState = Editing::None;
+    editState = Editing::Wall;
+
+    m_gridWidthLowerBound = 3;
+    m_gridWidthUpperBound = 36;
 
     m_wallsHaveChanged = true; // done to trigger first iteration of OpState::ShowPath 
     m_justSimulated = true;
@@ -179,29 +195,7 @@ void Grid::addVertex(int p_vertex)
 
 void Grid::update()
 {
-    //Onclicks are better for Edit and Simulate than for ShowPath.
-    //This is due to a result of controller class actions might not resulting in a changing of configuration. But, sometimes it does.
-    //So, instead of checking whether or not a change has occured (heavy overhead), result to the "naive" approach.
-
-    //Edit and Simulate can use onclick because:
-    //Edit doesn't display a path it only changes the configuration. Think of edit as ShowPath minus active path display
-    //Simulate shows algorithmic results over time. The results are already known and the configuration cannot be changed.
-    //
-/*
-    int num = 0;
-
-    for(int i = 0;
-        i < m_Tiles.size();
-        i++)
-    {
-        if(m_Tiles[i].tileType == Type::Wall)
-        {
-            num++;
-        }
-    }
-    std::cout << "Number of walls: " << num << " || " << "Number of removedVertices: " << removedVertices << '\n';
-*/
-    switch(m_appState->current_state)
+    switch(m_appState.current_state)
     {   
         case OpState::Idle:
         {
@@ -251,22 +245,24 @@ void Grid::update()
 
         case OpState::Simulate:
         {   
-            if(m_SimulationIndex < m_algo_result_total.size()) // Dont include discovery of goal node
+            if(direction == 1)
             {
-                int tile_index = m_algo_result_total[m_SimulationIndex];
-                m_Tiles[tile_index].part_of_path = true;
-                m_SimulationIteration += m_SimulationIteration_factor;
-                if(m_SimulationIteration > m_SimulationIteration_limit)
+                if(m_SimulationIndex < m_algo_result_total.size()) // Dont include discovery of goal node
                 {
-                    ++m_SimulationIndex;
-                    m_SimulationIteration = 0;
+                    int tile_index = m_algo_result_total[m_SimulationIndex];
+                    m_Tiles[tile_index].part_of_path = true;
+                    m_SimulationIteration += (speed*m_SimulationIteration_factor);
+                    if(m_SimulationIteration > m_SimulationIteration_limit)
+                    {
+                        ++m_SimulationIndex;
+                        m_SimulationIteration = 0;
+                    }
                 }
-            }
-            else
-            {
-                // simulation has finished
-                m_SimulationIndex = 0;
-                m_SimulationIteration = 0;
+                else
+                {
+                    // simulation has finished
+                    m_appState.current_state = OpState::Idle;
+                }
             }
             break;
         }
@@ -292,7 +288,9 @@ void Grid::executeAlgorithm()
 
         case Algos::DFS:
         {
-            m_algo_result_total = dfs();
+            std::pair<std::vector<int>, std::vector<int>> dfsOutput = dfs();
+            m_algo_result_total = dfsOutput.first;
+            m_algo_result_path = dfsOutput.second;
             break;
         }
 
@@ -334,9 +332,43 @@ std::pair<std::vector<int>, std::vector<int>> Grid::bfs()
     return pair_result;
 }
 
-std::vector<int> Grid::dfs()
+std::pair<std::vector<int>, std::vector<int>> Grid::dfs()
 {
-    return {};
+    int size = m_gridWidth * m_gridWidth;
+    std::stack<int> stk;
+    std::vector<bool> visited(size, false);
+    stk.push(m_startPosition);
+    std::vector<int> previous(size);
+    bool found = false;
+    std::vector<int> resultPath;
+    int idx = 0;
+    while(!stk.empty() && !found)
+    {
+        int u = stk.top();
+        stk.pop();
+        if(!visited[u])
+        {
+            visited[u] = true;
+            if(u == m_goalPosition)
+            {
+                found = true;
+                break;
+            }
+            else if(idx > 0)
+            {
+                resultPath.push_back(u);
+            }
+            for(int i = 0; i < m_AdjList[u].size(); i++)
+            {
+                int v = m_AdjList[u][i];
+                previous[v] = u;
+                stk.push(v);
+            }
+        }
+        idx++;
+    }
+    std::pair<std::vector<int>, std::vector<int>> pairResult(resultPath, previous);
+    return pairResult;
 }
 
 bool Grid::handleLeftClick(int x, int y)
@@ -345,9 +377,8 @@ bool Grid::handleLeftClick(int x, int y)
     // return false if not. This helps not computing other elements in the model like gui buttons since
     // only 1 object can be clicked/interacted with at any time. -- by design
 
-    if((!isVisible) || (m_appState->current_state != OpState::Edit))
+    if((!isVisible) || (m_appState.current_state != OpState::Edit))
         return false;
-
     Tile* selectedTile = getIntersectedTile(x, y); // no need to iterator over every tile in m_Tiles -> simply calculate which tile would be clicked given some coords, if any.
     if(selectedTile != nullptr && (selectedTile->tileType == Type::Blank || selectedTile->tileType == Type::Path))
     {   
@@ -398,7 +429,7 @@ void Grid::handleRightClick(int mouseX, int mouseY)
         clearGrid();
         resetSimulation();
         setAppState(OpState::Edit);
-        if(m_appState->current_state == OpState::Edit)
+        if(m_appState.current_state == OpState::Edit)
         {
         
             if(selectedTile->tileType == Type::Wall)   
@@ -426,7 +457,7 @@ void Grid::printAdjList()
 
 void Grid::setAppState(OpState new_state)
 {
-    m_appState->current_state = new_state;
+    m_appState.current_state = new_state;
 }
 
 void Grid::clearGrid()
@@ -443,8 +474,21 @@ void Grid::clearGrid()
 
 void Grid::resetSimulation()
 {
+    clearGrid();
     m_SimulationIndex = 0;
     m_SimulationIteration = 0;
+}
+
+void Grid::playOrPauseSimulate()
+{
+    if(m_SimulationIndex == 0)
+    {
+        Simulate();
+    }
+    if(m_appState.current_state == OpState::Simulate)
+        m_appState = OpState::Idle;
+    else if(m_appState.current_state == OpState::Idle || m_appState.current_state == OpState::Edit)
+        m_appState = OpState::Simulate;
 }
 
 void Grid::Simulate()
@@ -586,4 +630,65 @@ void Grid::decreaseGridSpawnChanger()
 void Grid::setAlgorithm(Algos newAlgo)
 {
     m_currentAlgo = newAlgo;
+}
+
+void Grid::handleKeyPress(const sf::Event& event)
+{
+
+}
+
+void Grid::decreaseGridSize()
+{
+    int currentSize = m_gridWidth;
+    if(currentSize > m_gridWidthLowerBound)
+    {
+        clearGridOfWalls();
+        decreaseGridSpawnChanger();
+        m_gridWidth = currentSize - 1;
+        updateGridValues();
+    }
+}
+
+void Grid::increaseGridSize()
+{
+    int currentSize = m_gridWidth;
+    if(currentSize < m_gridWidthUpperBound)
+    {
+        clearGridOfWalls();
+        m_gridWidth = currentSize + 1;
+        updateGridValues();
+    }
+}
+
+std::string Grid::slowdown()
+{
+    std::string result = "";
+    if(speed > 1)
+        result = std::to_string(--speed);
+    else
+        result = std::to_string(speed);
+    result += "x";
+    return result;
+}
+
+std::string Grid::speedup()
+{
+    std::string result = "";
+    if(speed < 8)
+        result = std::to_string(++speed);
+    else
+        result = std::to_string(speed);
+    result += "x";
+    return result;
+}
+
+void Grid::changeAlgo(Algos newAlgo)
+{
+    m_currentAlgo = newAlgo;
+    executeAlgorithm();
+}
+
+std::string Grid::getStepString()
+{
+    return "Step " + std::to_string(m_SimulationIndex+1);
 }

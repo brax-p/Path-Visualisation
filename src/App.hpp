@@ -30,13 +30,13 @@ void App::run()
 
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), title, sf::Style::Titlebar | sf::Style::Close);
     window.setPosition(sf::Vector2i(0,0));
-    sf::Vector2f algoDisplayPos(25.0f, 25.0f);
-    sf::Vector2f algoDisplaySize(750.0f, 750.0f);
+    sf::Vector2f algoDisplayPos(50.0f, 50.0f);
+    sf::Vector2f algoDisplaySize(900.0f, 900.0f);
     
-    AppState *appState = new AppState(OpState::INIT);
-    GUI gui(window);
-    Grid grid(15, appState, algoDisplayPos, algoDisplaySize);
-    Model model(grid, window, gui, appState);
+    AppState appState(OpState::INIT);
+    AlgoModels algoModels(appState, algoDisplayPos, algoDisplaySize, window);
+    GUI gui(window, algoModels, appState);
+    Model model(window, gui, appState, algoModels);
     Controller controller(model);
 
     sf::Clock deltaClock;
@@ -70,7 +70,6 @@ void App::run()
         gui.render();
         window.display();
         sf::Time epoch_end = deltaClock.restart();
-        std::cout << "Frames per second: " << 1.0 / epoch_end.asSeconds() << "\n";
+        //std::cout << "Frames per second: " << 1.0 / epoch_end.asSeconds() << "\n"; // FPS COUNTER IN TERMINAL
     }
-    delete appState;
 }
