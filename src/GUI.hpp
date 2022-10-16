@@ -88,9 +88,9 @@ struct Main : public Page
             algoModel.currentType = ModelType::GRID;
         }
         ImGui::SameLine();
-        if(ImGui::RadioButton("Tree", &chosen, 2))
+        if(ImGui::RadioButton("Graph", &chosen, 2))
         {
-            algoModel.currentType = ModelType::TREE;
+            algoModel.currentType = ModelType::GRAPH;
         }
         ImGui::NewLine();
 

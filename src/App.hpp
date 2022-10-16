@@ -70,6 +70,6 @@ void App::run()
         gui.render();
         window.display();
         sf::Time epoch_end = deltaClock.restart();
-        //std::cout << "Frames per second: " << 1.0 / epoch_end.asSeconds() << "\n"; // FPS COUNTER IN TERMINAL
+       // std::cout << "Frames per second: " << 1.0 / epoch_end.asSeconds() << "\n"; // FPS COUNTER IN TERMINAL
     }
 }

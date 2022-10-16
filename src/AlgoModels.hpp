@@ -1,11 +1,13 @@
 #pragma once
 #include "Grid.hpp"
+#include "Graph.hpp"
 
-enum class ModelType { NONE, GRID, TREE };
+enum class ModelType { NONE, GRID, GRAPH };
 class AlgoModels
 {
 public: 
     Grid grid;
+    Graph graph;
     AppState& appState;
     sf::Vector2f displayOrigin;
     sf::Vector2f displaySize;
@@ -14,6 +16,7 @@ public:
 
     AlgoModels(AppState& p_appState, sf::Vector2f p_displayOrigin, sf::Vector2f p_displaySize, sf::RenderWindow& w) :
                 grid(15, p_appState, p_displayOrigin, p_displaySize),
+                graph(p_appState, p_displayOrigin, p_displaySize),
                 window(w),
                 appState(p_appState)
     {
@@ -31,9 +34,9 @@ public:
         {
             grid.draw(window);
         }
-        else if(currentType == ModelType::TREE)
+        else if(currentType == ModelType::GRAPH)
         {
-            //tree.draw(window);
+            graph.draw(window);
         }
     }
 
@@ -43,9 +46,9 @@ public:
         {
             grid.update();
         }
-        else if(currentType == ModelType::TREE)
+        else if(currentType == ModelType::GRAPH)
         {
-            //tree.update();
+            //graph.update();
         }
     }
 
@@ -53,13 +56,13 @@ public:
     {
         if(currentType == ModelType::GRID)
         {
-            //tree.isVisible = false;
+            graph.isVisible = false;
             grid.isVisible = true;
         }
-        else if(currentType == ModelType::TREE)
+        else if(currentType == ModelType::GRAPH)
         {
             grid.isVisible = false;
-            //tree.isVisible = false;
+            graph.isVisible = true;
         }
     }
 
@@ -69,9 +72,9 @@ public:
         {
             grid.isVisible = false;
         }
-        if(currentType == ModelType::TREE)
+        if(currentType == ModelType::GRAPH)
         {
-            //tree.isVisible = false;
+            graph.isVisible = false;
         }
     }
 
@@ -80,6 +83,10 @@ public:
         if(currentType == ModelType::GRID)
         {
             grid.handleLeftClick(x,y);
+        }
+        else if(currentType == ModelType::GRAPH)
+        {
+            graph.handleLeftClick(x,y);
         }
     }
 
