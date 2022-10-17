@@ -1,6 +1,27 @@
 #pragma once
 #include "Node.hpp"
 
+struct Edge
+{
+    std::pair<Node&, Node&> nodes;
+    sf::Vertex line[2];
+    Edge(Node& node1, Node& node2) : nodes(node1, node2) {}
+    void update()
+    {
+        /*
+        std::cout << "First: " << nodes.first.getNodePosition().x << "," << nodes.first.getNodePosition().y << "\n";
+        std::cout << "Second: " << nodes.second.getNodePosition().x << "," << nodes.second.getNodePosition().y << "\n";
+        */
+        line[0] = sf::Vertex(nodes.first.getNodePosition());
+        line[1] = sf::Vertex(nodes.second.getNodePosition());
+
+    }
+    void draw(sf::RenderWindow& window)
+    {
+        window.draw(line, 2, sf::Lines);
+    }
+};
+
 
 class Graph
 {
@@ -15,6 +36,7 @@ class Graph
         bool isVisible;
     private:
         std::vector<Node> m_Nodes;
+        std::vector<Edge> m_Edges;
         AppState m_appState;
         sf::Vector2f m_ContainerPosition;
         sf::Vector2f m_ContainerSize;
@@ -28,7 +50,6 @@ Graph::Graph(AppState& p_appState, sf::Vector2f displayAreaPosition, sf::Vector2
     m_ContainerSize = displayAreaSize;
     isVisible = false;
 
-
     // Create Nodes
     sf::Vector2f firstPos = m_ContainerPosition;
     float nodeRadius = 25.0f;
@@ -41,6 +62,9 @@ Graph::Graph(AppState& p_appState, sf::Vector2f displayAreaPosition, sf::Vector2
     secondPos.y+=200;
     Node second(secondPos, nodeRadius);
     m_Nodes.push_back(std::move(second));
+
+    Edge first_second(m_Nodes[0], m_Nodes[1]);
+    m_Edges.push_back(std::move(first_second));
 }
 
 void Graph::draw(sf::RenderWindow& window)
@@ -49,6 +73,9 @@ void Graph::draw(sf::RenderWindow& window)
 
     for(auto& node : m_Nodes)
         node.draw(window);
+
+    for(auto& edge : m_Edges)
+        edge.draw(window);
 }
 
 void Graph::update(sf::Vector2i p_mousePosition)
@@ -60,6 +87,9 @@ void Graph::update(sf::Vector2i p_mousePosition)
             node.setNodePosition(sf::Vector2f(p_mousePosition.x, p_mousePosition.y));
         }
     }
+
+    for(auto& edge : m_Edges)
+        edge.update();
 }
 
 void Graph::handleLeftClick(int x, int y)

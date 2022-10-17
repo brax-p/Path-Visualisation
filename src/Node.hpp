@@ -10,6 +10,7 @@ class Node
         void setNodePosition(sf::Vector2f p_newNodePosition);
         
         bool isClicked;
+        bool isSelected;
     private:
         //std::vector<std::unique_ptr<Node>> m_Neighbors;
         sf::CircleShape m_Node;
