@@ -48,6 +48,7 @@ void Controller::update_event(const sf::Event &event){
             if(event.mouseButton.button == sf::Mouse::Left)
             {
                 model.leftClickDown = false;
+                model.handleLeftReleased();
             }
             else if(event.mouseButton.button == sf::Mouse::Right)
             {

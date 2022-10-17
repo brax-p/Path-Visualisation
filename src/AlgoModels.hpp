@@ -42,13 +42,14 @@ public:
 
     void update()
     {
+        sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
         if(currentType == ModelType::GRID)
         {
             grid.update();
         }
         else if(currentType == ModelType::GRAPH)
         {
-            //graph.update();
+            graph.update(mousePosition);
         }
     }
 
@@ -90,10 +91,16 @@ public:
         }
     }
 
+    void handleLeftReleased()
+    {
+        graph.handleLeftReleased();
+    }
+
     void handleRightClick(int x, int y)
     {
         grid.handleRightClick(x, y);
     }
+
 
     void handleKeyPress(const sf::Event& event)
     {

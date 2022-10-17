@@ -65,7 +65,7 @@ void Model::handleLeftClick(int mouseX, int mouseY)
 
 void Model::handleLeftReleased()
 {
-
+    algoModels.handleLeftReleased();
 }
 
 void Model::handleRightClick(int x, int y)

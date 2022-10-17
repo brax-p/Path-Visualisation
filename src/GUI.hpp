@@ -299,6 +299,11 @@ struct Simulate : public Page
      
 };
 
+struct EditGraph : public Page
+{
+
+};
+
 class GUI
 {
     public:
