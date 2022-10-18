@@ -7,24 +7,18 @@ enum class Pages { NONE, START, MAIN, EDIT, SIMULATE };
 
 struct Page
 {
-    Page() { }
-    virtual ~Page() = default;
+    Pages& currentPage;
+    AppState& appState;
+    AlgoModels& algoModel;
+    Page(Pages& p_currentPage, AppState& p_appState, AlgoModels& p_algoModel) : currentPage(p_currentPage), appState(p_appState), algoModel(p_algoModel) { }
     virtual void init() {}
 };
 
 struct Start : public Page
 {
-    Pages& currentPage;
-    AppState& appState;
-    AlgoModels& algoModel;
-    Start(Pages& p_CurrentPage, AppState& p_appState, AlgoModels& p_algoModel) :
-        appState(p_appState),
-        algoModel(p_algoModel),
-        currentPage(p_CurrentPage)
-    { 
-        currentPage = p_CurrentPage;
-    }
-    void init() 
+    Start(Pages& p_currentPage, AppState& p_appState, AlgoModels& p_algoModel) :
+        Page(p_currentPage, p_appState, p_algoModel) { }
+    void init() override
     {
         ImVec2 windowSize = ImVec2(400, 100);
         ImVec2 windowPos = ImGui::GetMainViewport()->Pos;
@@ -49,14 +43,8 @@ struct Start : public Page
 
 struct Main : public Page
 {
-    AppState& appState;
-    Pages& currentPage;
-    AlgoModels& algoModel;
-
-    Main(Pages& p_CurrentPage, AppState& p_appState, AlgoModels& p_algoModel) :
-        appState(p_appState),
-        algoModel(p_algoModel),
-        currentPage(p_CurrentPage)
+    Main(Pages& p_currentPage, AppState& p_appState, AlgoModels& p_algoModel) :
+        Page(p_currentPage, p_appState, p_algoModel)
     { 
 
     }
@@ -123,18 +111,13 @@ struct Main : public Page
 
 struct EditGrid : public Page
 {
-    AppState& appState;
-    Pages& currentPage;
-    AlgoModels& algoModel;
     EditGrid(Pages& p_currentPage, AppState& p_appState, AlgoModels& p_algoModel) :
-        appState(p_appState),
-        algoModel(p_algoModel),
-        currentPage(p_currentPage)
+        Page(p_currentPage, p_appState, p_algoModel)
     {
 
     }
 
-    void init()
+    void init() override
     {
         ImVec2 containerSize(750, algoModel.displaySize.y);       
         ImVec2 containerPos(ImGui::GetMainViewport()->Size.x - 100 - containerSize.x, ImGui::GetMainViewport()->Size.y - 50 - containerSize.y);
@@ -202,23 +185,18 @@ struct EditGrid : public Page
     }
 };
 
-struct Simulate : public Page 
+struct SimulateGrid : public Page 
 {
-    AppState& appState;
-    Pages& currentPage;
-    AlgoModels& algoModel;
     std::string speedupText;
     std::string stepText;
-    Simulate(Pages& p_currentPage, AppState& p_appState, AlgoModels& p_algoModel) :
-        appState(p_appState),
-        algoModel(p_algoModel),
-        currentPage(p_currentPage)
+    SimulateGrid(Pages& p_currentPage, AppState& p_appState, AlgoModels& p_algoModel) :
+        Page(p_currentPage, p_appState, p_algoModel)
     {
         speedupText = "Simulation Speed: 1x";
         stepText = "Step 0";
     }
 
-    void init()
+    void init() override
     {
         ImVec2 containerSize(750, algoModel.displaySize.y);       
         ImVec2 containerPos(ImGui::GetMainViewport()->Size.x - 100 - containerSize.x, ImGui::GetMainViewport()->Size.y - 50 - containerSize.y);
@@ -301,7 +279,89 @@ struct Simulate : public Page
 
 struct EditGraph : public Page
 {
+    EditGraph(Pages& p_currentPage, AppState& p_appState, AlgoModels& p_algoModel) : 
+        Page(p_currentPage, p_appState, p_algoModel) {  }
+    void init() override
+    {
+        ImVec2 containerSize(750, algoModel.displaySize.y);       
+        ImVec2 containerPos(ImGui::GetMainViewport()->Size.x - 100 - containerSize.x, ImGui::GetMainViewport()->Size.y - 50 - containerSize.y);
+        ImGui::SetNextWindowSize(containerSize);
+        ImGui::SetNextWindowPos(containerPos);
+        ImGuiWindowFlags flags = 0; flags = (ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse);
 
+        ImGui::Begin("Edit Page", NULL, flags);
+        ImGui::SetWindowFontScale(2.0f);
+        float verticalPadding = 45.0f;
+        ImVec2 centeredTitle =ImVec2(ImGui::GetWindowSize().x / 2 - (ImGui::CalcTextSize("Edit", NULL, false).x * 0.475), verticalPadding);
+        ImGui::SetCursorPos(centeredTitle);
+        ImGui::Text("Edit");
+        centeredTitle.y += (2 * verticalPadding);
+        centeredTitle.x *= (.70);
+        ImGui::SetCursorPos(centeredTitle);
+        ImGui::Text("Choose what to edit:");
+        centeredTitle.y += (1.5 * verticalPadding);
+        centeredTitle.x *= (.90);
+        //ImGui::SetCursorPog(centeredTitle);
+        static int editState = 0;    
+        if(ImGui::RadioButton("Select/Move", &editState, 0)) algoModel.graph.currentEditState = Graph::Editing::MOVE_NODE; ImGui::NewLine();
+        if(ImGui::RadioButton("Add Node", &editState, 1)) algoModel.graph.currentEditState = Graph::Editing::ADD_NODE; ImGui::SameLine();
+        if(ImGui::RadioButton("Remove Node", &editState, 2)) algoModel.graph.currentEditState = Graph::Editing::REMOVE_NODE; ImGui::NewLine();
+        if(ImGui::RadioButton("Add Edge", &editState, 3)) algoModel.graph.currentEditState = Graph::Editing::ADD_EDGE; ImGui::SameLine();
+        if(ImGui::RadioButton("Remove Edge", &editState, 4)) algoModel.graph.currentEditState = Graph::Editing::REMOVE_EDGE; ImGui::SameLine();
+
+        float bottomBtnPadding = 30.0f;
+        ImVec2 buttonSize((containerSize.x - (3 * bottomBtnPadding)) / 2, 100);
+        ImGui::SetCursorPos(ImVec2(0 + bottomBtnPadding, containerSize.y - bottomBtnPadding - buttonSize.y));
+        if(ImGui::Button("Main Menu", buttonSize))
+        {
+            currentPage = Pages::MAIN;
+            algoModel.disallowDisplay();
+        }
+        ImGui::SetCursorPos(ImVec2((2 * bottomBtnPadding) + buttonSize.x, containerSize.y - bottomBtnPadding - buttonSize.y));
+        if(ImGui::Button("Simulate", buttonSize))
+        {
+            currentPage = Pages::SIMULATE;
+        }
+        
+        ImGui::End();
+    }
+};
+
+struct SimulateGraph : public Page
+{
+    SimulateGraph(Pages& p_currentPage, AppState& p_appState, AlgoModels& p_algoModel) : 
+        Page(p_currentPage, p_appState, p_algoModel) {  }
+    void init() override
+    {
+        ImVec2 containerSize(750, algoModel.displaySize.y);       
+        ImVec2 containerPos(ImGui::GetMainViewport()->Size.x - 100 - containerSize.x, ImGui::GetMainViewport()->Size.y - 50 - containerSize.y);
+        ImGui::SetNextWindowSize(containerSize);
+        ImGui::SetNextWindowPos(containerPos);
+        ImGuiWindowFlags flags = 0; flags = (ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse);
+
+        ImGui::Begin("Simulate", NULL, flags);
+        ImGui::SetWindowFontScale(2.0f);
+        float verticalPadding = 45.0f;
+        ImVec2 centeredTitle =ImVec2(ImGui::GetWindowSize().x / 2 - (ImGui::CalcTextSize("Edit", NULL, false).x * 0.475), verticalPadding);
+        ImGui::SetCursorPos(centeredTitle);
+        ImGui::Text("Simulate");
+        float bottomBtnPadding = 30.0f;
+        ImVec2 buttonSize((containerSize.x - (3 * bottomBtnPadding)) / 2, 100);
+        ImGui::SetCursorPos(ImVec2(0 + bottomBtnPadding, containerSize.y - bottomBtnPadding - buttonSize.y));
+        if(ImGui::Button("Main Menu", buttonSize))
+        {
+            currentPage = Pages::MAIN;
+            algoModel.disallowDisplay();
+        }
+        ImGui::SetCursorPos(ImVec2((2 * bottomBtnPadding) + buttonSize.x, containerSize.y - bottomBtnPadding - buttonSize.y));
+        if(ImGui::Button("Edit", buttonSize))
+        {
+            appState.current_state = OpState::Edit;
+            currentPage = Pages::EDIT;
+            algoModel.grid.resetSimulation();
+        }
+        ImGui::End();
+    }
 };
 
 class GUI
@@ -323,7 +383,9 @@ class GUI
         Start start;
         Main main;
         EditGrid editGrid;
-        Simulate simulate;
+        EditGraph editGraph;
+        SimulateGrid simulateGrid;
+        SimulateGraph simulateGraph;
 };
 
 GUI::GUI(sf::RenderWindow& p_Window, AlgoModels& p_algoModels, AppState& p_appState) : 
@@ -331,7 +393,9 @@ GUI::GUI(sf::RenderWindow& p_Window, AlgoModels& p_algoModels, AppState& p_appSt
     m_algoModels(p_algoModels),
     m_appState(p_appState),
     editGrid(m_CurrentPage, m_appState, m_algoModels),
-    simulate(m_CurrentPage, m_appState, m_algoModels),
+    editGraph(m_CurrentPage, m_appState, m_algoModels),
+    simulateGrid(m_CurrentPage, m_appState, m_algoModels),
+    simulateGraph(m_CurrentPage, m_appState, m_algoModels),
     main(m_CurrentPage, m_appState, m_algoModels),
     start(m_CurrentPage, m_appState, m_algoModels)
 {
@@ -378,15 +442,18 @@ void GUI::doStuff()
         case Pages::EDIT:
         {
             if(m_algoModels.currentType == ModelType::GRID)
-            {
                 editGrid.init();
-            }
+            else if(m_algoModels.currentType == ModelType::GRAPH)
+                editGraph.init();   
             break;
         }
 
         case Pages::SIMULATE:
         {
-            simulate.init();
+            if(m_algoModels.currentType == ModelType::GRID)
+                simulateGrid.init();
+            else if(m_algoModels.currentType == ModelType::GRAPH)
+                simulateGraph.init();
             break;
         }
     }

@@ -8,11 +8,11 @@ class Node
         bool isIntersecting(int x, int y);
         sf::Vector2f getNodePosition();
         void setNodePosition(sf::Vector2f p_newNodePosition);
+        float getNodeRadius();
         
         bool isClicked;
         bool isSelected;
     private:
-        //std::vector<std::unique_ptr<Node>> m_Neighbors;
         sf::CircleShape m_Node;
         std::string m_ID;
 };
@@ -56,4 +56,9 @@ sf::Vector2f Node::getNodePosition()
 void Node::setNodePosition(sf::Vector2f p_newNodePosition)
 {
     m_Node.setPosition(p_newNodePosition);
+}
+
+float Node::getNodeRadius()
+{
+    return m_Node.getRadius();
 }
